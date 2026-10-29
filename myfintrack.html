@@ -1,0 +1,2333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>FinTrack - Money Management</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="FinTrack">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="manifest" href='data:application/manifest+json,{
+    "name": "FinTrack - Money Management",
+    "short_name": "FinTrack",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#f8fafc",
+    "theme_color": "#ffffff",
+    "icons": [
+      {
+        "src": "https://cdn-icons-png.flaticon.com/512/2953/2953363.png",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "any maskable"
+      }
+    ]
+  }'>
+
+  <style>
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+     html, body {
+      width: 100%;
+      height: 100%;
+      background: #f8fafc;
+      color: #0f172a;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Fixed Sticky App Header */
+    .app-header {
+      background: #ffffff;
+      color: #0f172a;
+      padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      border-bottom: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .app-header-left { display: flex; align-items: center; gap: 8px; }
+    .brand-icon-box {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 900;
+      font-size: 16px;
+    }
+    .app-header .brand {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: -0.4px;
+      color: #0f172a;
+      cursor: pointer;
+    }
+    
+    .app-header-right { display: flex; align-items: center; gap: 10px; }
+    .header-icon-btn {
+      background: none;
+      border: none;
+      font-size: 17px;
+      cursor: pointer;
+      position: relative;
+      color: #475569;
+    }
+    .header-notification-dot {
+      position: absolute;
+      top: 0; right: 0;
+      width: 7px; height: 7px;
+      background: #ef4444;
+      border-radius: 50%;
+    }
+    .user-avatar-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      padding: 3px 8px 3px 4px;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+    .user-avatar-pill img {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .user-avatar-pill span {
+      font-size: 11.5px; font-weight: 700; color: #334155;
+    }
+
+    /* Section Wrapper */
+    .app-screen-section {
+      width: 100%;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 10px;
+    }
+
+    /* Hero Banner */
+    .hero-banner-card {
+      margin: 10px 0 12px;
+      background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 50%, #1d4ed8 100%);
+      border-radius: 20px;
+      padding: 18px;
+      color: #ffffff;
+      box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-top-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .hero-greeting { font-size: 17px; font-weight: 800; margin-bottom: 3px; }
+    .hero-subtitle { font-size: 11.5px; opacity: 0.9; }
+    .hero-month-pill {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 5px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      backdrop-filter: blur(4px);
+    }
+    
+    .hero-balance-box {
+      background: rgba(15, 23, 42, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      padding: 14px;
+      backdrop-filter: blur(6px);
+    }
+    .hero-bal-label { font-size: 11px; font-weight: 700; opacity: 0.85; display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+    .hero-bal-label::before { content: ""; width: 6px; height: 6px; background: #10b981; border-radius: 50%; }
+    .hero-bal-val-row { display: flex; justify-content: space-between; align-items: flex-end; }
+    .hero-bal-amount { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; }
+    .hero-bal-trend {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      padding: 3px 7px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      font-weight: 800;
+    }
+
+    /* Financial Summary Section */
+    .summary-section-wrap {
+      margin: 0 0 12px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+      border: 1px solid #e2e8f0;
+    }
+    .summary-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .summary-title { font-size: 14px; font-weight: 800; color: #0f172a; }
+    .view-all-link { font-size: 11.5px; font-weight: 700; color: #2563eb; cursor: pointer; text-decoration: none; }
+
+    /* 6 Cards Grid */
+    .img-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .modern-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 8px 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 68px;
+    }
+    .modern-box-top { display: flex; justify-content: space-between; align-items: center; }
+    .modern-box-label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; }
+    .modern-box-icon { font-size: 11px; }
+    .modern-box-val { font-size: 12.5px; font-weight: 900; margin: 2px 0 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .modern-box-sub { font-size: 8px; color: #94a3b8; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .box-bal { border-left: 3px solid #0284c7; } .box-bal .modern-box-val { color: #0284c7; }
+    .box-inc { border-left: 3px solid #10b981; } .box-inc .modern-box-val { color: #10b981; }
+    .box-exp { border-left: 3px solid #ef4444; } .box-exp .modern-box-val { color: #ef4444; }
+    .box-rec { border-left: 3px solid #8b5cf6; } .box-rec .modern-box-val { color: #8b5cf6; }
+    .box-pay { border-left: 3px solid #f59e0b; } .box-pay .modern-box-val { color: #f59e0b; }
+    .box-proj { border-left: 3px solid #06b6d4; } .box-proj .modern-box-val { color: #06b6d4; }
+
+    /* Twin Action CTA Buttons */
+    .twin-action-row {
+      margin: 0 0 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .twin-cta-btn {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: none;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 11.5px;
+      font-weight: 800;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    .twin-cta-sync { background: linear-gradient(135deg, #059669, #047857); }
+    .twin-cta-open { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+
+    /* Updated Sub Navigation Tabs */
+    .sub-nav-wrapper {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 30px;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .sub-nav-tabs-btn {
+      flex: 1;
+      padding: 9px 6px;
+      border: none;
+      background: transparent;
+      border-radius: 24px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      text-align: center;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .sub-nav-tabs-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Side-by-Side Lower Dashboard Grid */
+    .dashboard-lower-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .lower-card-box {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .lower-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .lower-card-title { font-size: 12.5px; font-weight: 800; color: #0f172a; }
+
+    .inc-exp-content-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .inc-exp-left-side { flex: 1; padding-right: 8px; }
+    .inc-exp-right-side {
+      width: 80px;
+      height: 80px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .donut-circle {
+      width: 76px; height: 76px;
+      border-radius: 50%;
+      background: conic-gradient(#10b981 0deg 260deg, #ef4444 260deg 360deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .donut-inner {
+      width: 58px; height: 58px;
+      background: #ffffff;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mini-line-label { font-size: 9.5px; font-weight: 700; color: #64748b; margin-top: 4px; }
+    .mini-line-val { font-size: 13px; font-weight: 900; margin-bottom: 4px; }
+    .mini-progress-track { width: 100%; height: 5px; background: #f1f5f9; border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+    .mini-progress-fill-inc { height: 100%; background: #10b981; border-radius: 4px; }
+    .mini-progress-fill-exp { height: 100%; background: #ef4444; border-radius: 4px; }
+
+    /* Recent Transactions List */
+    .recent-tx-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .recent-tx-item:last-child { border-bottom: none; }
+    .recent-tx-left { display: flex; align-items: center; gap: 8px; }
+    .recent-tx-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: bold;
+    }
+    .tx-inc-bg { background: #d1fae5; color: #059669; }
+    .tx-exp-bg { background: #fee2e2; color: #dc2626; }
+    .recent-tx-title { font-size: 11px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+    .recent-tx-sub { font-size: 9px; color: #94a3b8; }
+    .recent-tx-right { display: flex; align-items: center; gap: 6px; }
+    .recent-tx-amt { font-size: 11.5px; font-weight: 800; }
+    .recent-tx-dots { font-size: 12px; color: #94a3b8; cursor: pointer; padding: 0 2px; }
+
+    /* Bottom Sticky Navigation Bar (Mobile Only) */
+    .bottom-app-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: calc(54px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 10000;
+      box-shadow: 0 -3px 10px rgba(0,0,0,0.03);
+    }
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      flex: 1;
+      height: 100%;
+    }
+    .bottom-nav-item.active { color: #2563eb; }
+    .bottom-nav-item span.icon { font-size: 16px; }
+
+    /* Desktop Top Navigation Bar Styles */
+    .desktop-top-nav {
+      display: none;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 20px;
+      gap: 10px;
+      align-items: center;
+      position: sticky;
+      top: 53px;
+      z-index: 999;
+    }
+
+    .desktop-nav-btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .desktop-nav-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Media Queries for Desktop layout sync */
+@media (min-width: 768px) {
+
+  
+
+  /* Hide mobile bottom navigation on computer */
+  .bottom-app-bar {
+    display: none !important;
+  }
+
+  /* Hide blue greeting banner on computer */
+  .hero-banner-card {
+    display: none !important;
+  }
+
+   #transaction-section > .sheet-container:first-child {
+    display: none !important;
+  }
+
+  body {
+    padding-bottom: 10px;
+  }
+
+  .dashboard-lower-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .img-metrics-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .desktop-top-nav {
+    display: flex;
+  }
+}
+
+/* Containers & Table */
+.sheet-container {
+  background: #ffffff;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  margin: 8px 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 54vh;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  scroll-behavior: smooth;
+}
+    table { width: 100%; border-collapse: collapse; min-width: 500px; }
+    th, td { 
+      border: 1px solid #e2e8f0; 
+      padding: 7px 8px; 
+      text-align: left; /* Default center alignment for Date and Particular */
+      font-size: 12.5px; 
+    }
+    
+    /* Right align numerical columns and headers */
+    th:nth-child(3), th:nth-child(4), th:nth-child(5),
+    td:nth-child(3), td:nth-child(4), td:nth-child(5),
+    .num { 
+      text-align: right; 
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid transparent;
+      outline: none;
+      background: transparent;
+      font-size: 12.5px;
+      padding: 3px;
+      border-radius: 4px;
+      text-align: inherit; /* Inherits center or right alignment from the parent cell */
+    }
+    th { background: #f8fafc; font-weight: 700; color: #475569; position: sticky; top: 0; z-index: 2; }
+    .num { text-align: right; }
+    .exp-num { color: #dc2626 !important; font-weight: 700; }
+    .total-row { background: #f8fafc; font-weight: bold; position: sticky; bottom: 0; }
+    
+    input, select {
+      width: 100%;
+      border: 1px solid transparent;
+      outline: none;
+      background: transparent;
+      font-size: 12.5px;
+      padding: 3px;
+      border-radius: 4px;
+    }
+    input:focus, select:focus { background: #fff; border-color: #93c5fd; }
+    .action-btn { background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; padding: 3px 6px; border-radius: 4px; font-weight: 700; font-size: 10px; cursor: pointer; }
+    .add-row-btn { padding: 8px 14px; background: #0ea5e9; color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; }
+    .btn-toggle-bal { padding: 8px 12px; background: #64748b; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; }
+
+    /* Filter Box for Reports */
+    .filter-box {
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: #f8fafc;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 3px; flex: 1 1 140px; }
+    .filter-group label { font-size: 10.5px; font-weight: 700; color: #475569; }
+    .filter-box select, .filter-box input { border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #fff; font-size: 12px; }
+
+    /* Floating Autocomplete */
+    .autocomplete-floating-menu {
+      position: absolute;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      max-height: 160px;
+      overflow-y: auto;
+      z-index: 999999;
+      display: none;
+      min-width: 160px;
+    }
+    .autocomplete-item {
+      padding: 8px 12px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #1e293b;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover { background: #eff6ff; color: #2563eb; }
+
+    /* Modals */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(3px);
+      z-index: 999999;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+    }
+    .modal-box {
+      background: #ffffff;
+      border-radius: 14px;
+      max-width: 360px;
+      width: 100%;
+      padding: 18px;
+      text-align: center;
+    }
+    .modal-box h4 { font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 10px; }
+    .modal-input-field {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      padding: 9px 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      outline: none;
+      background: #f8fafc;
+    }
+    .modal-input-field:focus { border-color: #2563eb; background: #fff; }
+    .modal-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; }
+    .modal-btn { padding: 9px 14px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .modal-save-btn { background: #2563eb; color: #fff; width: 100%; }
+    .modal-cancel-btn { background: #e2e8f0; color: #334155; }
+    .modal-del-btn { background: #fee2e2; color: #ef4444; }
+
+    /* Toast */
+    #fintrack-toast {
+      position: fixed;
+      top: calc(12px + env(safe-area-inset-top, 0px));
+      left: 50%;
+      transform: translateX(-50%) translateY(-120px);
+      z-index: 999999;
+      min-width: 260px;
+      max-width: 90vw;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #ffffff;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    #fintrack-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+    #fintrack-toast.success { background: #059669; }
+    #fintrack-toast.error { background: #dc2626; }
+
+    /* Auth Screen */
+    #auth-screen-container {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, #1e3a8a, #0b1329);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100000;
+      padding: 16px;
+    }
+    .fintrack-card {
+      background: #ffffff;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 350px;
+      padding: 26px 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+    .fintrack-card h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 3px; }
+    .fintrack-card p.subtitle { font-size: 12px; color: #64748b; margin-bottom: 18px; }
+    .fintrack-input-group { margin-bottom: 10px; text-align: left; position: relative; }
+    .fintrack-input-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13.5px;
+      background: #f8fafc;
+      outline: none;
+    }
+    .pwd-input-wrapper { position: relative; display: flex; align-items: center; }
+    .pwd-input-wrapper input { padding-right: 38px; }
+    .pwd-toggle-btn { position: absolute; right: 8px; background: none; border: none; cursor: pointer; font-size: 14px; color: #64748b; }
+    .fintrack-btn {
+      width: 100%;
+      padding: 11px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .fintrack-card-footer { display: flex; justify-content: space-between; margin-top: 16px; font-size: 12px; }
+    .fintrack-card-footer a { color: #2563eb; text-decoration: none; font-weight: 600; cursor: pointer; }
+
+    /* Settings Hub */
+    .settings-list { display: flex; flex-direction: column; gap: 6px; }
+    .settings-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 11px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    
+  
+  </style>
+</head>
+<body>
+
+  <!-- Floating Autocomplete Dropdown List -->
+  <div id="liveAutocompleteMenu" class="autocomplete-floating-menu"></div>
+
+  <!-- Toast -->
+  <div id="fintrack-toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Notification</span>
+  </div>
+
+  <!-- Auth Screen -->
+  <div id="auth-screen-container">
+    <div class="fintrack-card">
+      <h1 id="authTitle">FinTrack</h1>
+      <p class="subtitle" id="authSubtitle">Please Login</p>
+
+      <div class="fintrack-input-group">
+        <input type="text" id="loginUsername" placeholder="Username" autocomplete="username">
+      </div>
+
+      <div class="fintrack-input-group" id="pinInputGroup" style="display: none;">
+        <input type="number" id="userRecoveryPin" inputmode="numeric" placeholder="4-Digit Recovery PIN">
+      </div>
+
+      <div class="fintrack-input-group" id="passwordInputGroup">
+        <div class="pwd-input-wrapper">
+          <input type="password" id="loginPassword" placeholder="Password (min 6 chars)" autocomplete="current-password">
+          <button type="button" class="pwd-toggle-btn" onclick="togglePasswordVisibility('loginPassword', this)">👁</button>
+        </div>
+      </div>
+
+      <button class="fintrack-btn" id="authSubmitBtn" onclick="handleAuthSubmit()">Login</button>
+
+      <div class="fintrack-card-footer">
+        <a id="forgotPwdLink" onclick="openForgotModal()">Forgot Password?</a>
+        <a id="authModeToggleLink" onclick="toggleAuthModeView()">Register</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Application Wrapper -->
+  <div id="main-app-content" style="display:none;">
+    
+    <!-- Top Sticky Header -->
+    <header class="app-header">
+      <div class="app-header-left">
+        <div class="brand-icon-box">F</div>
+        <div class="brand" id="appBrandTitle" onclick="openAppNameModal()">FinTrack</div>
+      </div>
+      <div class="app-header-right">
+        <div class="user-avatar-pill" onclick="promptSimpleLogout()" title="Click to Logout" style="cursor: pointer;">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Avatar">
+          <span id="currentUserNameLabel">Sadu</span>
+          <span style="font-weight: 800; color: #ef4444; margin-left: 2px; font-size: 11px;">Logout</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Desktop Top Navigation Bar -->
+    <nav class="desktop-top-nav">
+      <button class="desktop-nav-btn active" id="deskNav-dashboard" onclick="switchSection('dashboard')">Dashboard</button>
+      <button class="desktop-nav-btn" id="deskNav-transaction-sheet" onclick="switchSection('transaction'); switchTxTab('sheet');">Cashbook Sheet</button>
+      <button class="desktop-nav-btn" id="deskNav-transaction-rec" onclick="switchSection('transaction'); switchTxTab('rec');">Receivables</button>
+      <button class="desktop-nav-btn" id="deskNav-transaction-pay" onclick="switchSection('transaction'); switchTxTab('pay');">Payables</button>
+      <button class="desktop-nav-btn" id="deskNav-reports" onclick="switchSection('reports')">Reports</button>
+      <button class="desktop-nav-btn" id="deskNav-settings" onclick="switchSection('settings')">Settings</button>
+    </nav>
+
+    <!-- 1. DASHBOARD VIEW -->
+    <div id="dashboard-section" class="app-screen-section">
+      <!-- Hero Greeting Card -->
+      <div class="hero-banner-card">
+        <div class="hero-top-row">
+          <div>
+            <div class="hero-greeting">Good Morning, <span id="heroUserName">Sadu</span> 👋</div>
+            <div class="hero-subtitle">Here's your financial overview</div>
+          </div>
+          <div class="hero-month-pill">
+            <span>📅</span> This Month <span>▾</span>
+          </div>
+        </div>
+
+        <div class="hero-balance-box">
+          <div class="hero-bal-label">Real-time Net Balance</div>
+          <div class="hero-bal-val-row">
+            <div class="hero-bal-amount" id="heroNetBalance">₹73,543</div>
+            <div class="hero-bal-trend">+12.5% ↗</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Summary Section -->
+      <div class="summary-section-wrap">
+        <div class="summary-header-row">
+          <span class="summary-title">Financial Summary</span>
+          <a class="view-all-link" onclick="switchSection('transaction'); switchTxTab('sheet');">View All</a>
+        </div>
+
+        <div class="img-metrics-grid">
+          <!-- Card 1: Cash Balance -->
+          <div class="modern-box box-bal">
+            <div class="modern-box-top">
+              <span class="modern-box-label">Cash Balance</span>
+              <span class="modern-box-icon">💼</span>
+            </div>
+            <div class="modern-box-val" id="dashNetCash">₹0</div>
+            <div class="modern-box-sub">In-hand liquidity</div>
+          </div>
+
+          <!-- Card 2: Total Income -->
+          <div class="modern-box box-inc">
+            <div class="modern-box-top">
+              <span class="modern-box-label">Total Income</span>
+              <span class="modern-box-icon">📈</span>
+            </div>
+            <div class="modern-box-val" id="dashTotalIncome">₹0</div>
+            <div class="modern-box-sub">Total cashbook</div>
+          </div>
+
+          <!-- Card 3: Total Expense -->
+          <div class="modern-box box-exp">
+            <div class="modern-box-top">
+              <span class="modern-box-label">Total Expense</span>
+              <span class="modern-box-icon">📉</span>
+            </div>
+            <div class="modern-box-val" id="dashTotalExp">₹0</div>
+            <div class="modern-box-sub">Total logged</div>
+          </div>
+
+          <!-- Card 4: Receivables -->
+          <div class="modern-box box-rec">
+            <div class="modern-box-top">
+              <span class="modern-box-label">Receivables</span>
+              <span class="modern-box-icon">👥</span>
+            </div>
+            <div class="modern-box-val" id="dashDueIn">₹0</div>
+            <div class="modern-box-sub">Due in</div>
+          </div>
+
+          <!-- Card 5: Payables -->
+          <div class="modern-box box-pay">
+            <div class="modern-box-top">
+              <span class="modern-box-label">Payables</span>
+              <span class="modern-box-icon">👜</span>
+            </div>
+            <div class="modern-box-val" id="dashDueOut">₹0</div>
+            <div class="modern-box-sub">Due out</div>
+          </div>
+
+          <!-- Card 6: Projected Net -->
+          <div class="modern-box box-proj">
+            <div class="modern-box-top">
+              <span class="modern-box-label">Projected Net</span>
+              <span class="modern-box-icon">🕒</span>
+            </div>
+            <div class="modern-box-val" id="dashProjectedNet">₹0</div>
+            <div class="modern-box-sub">Net balance</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Twin Action CTA Buttons -->
+      <div class="twin-action-row">
+        <button class="twin-cta-btn twin-cta-sync" onclick="syncWithGoogleDrive(true)">
+          <span>☁️</span> <span>Sync Now</span>
+        </button>
+
+        <button class="twin-cta-btn twin-cta-open" onclick="switchSection('transaction'); switchTxTab('sheet');">
+          <span>📑</span> <span>Open Sheet →</span>
+        </button>
+      </div>
+
+      <!-- Side-by-Side Section -->
+      <div class="dashboard-lower-grid">
+        <!-- Income vs Expense Box -->
+        <div class="lower-card-box">
+          <div class="lower-card-header">
+            <span class="lower-card-title">Income vs Expense</span>
+            <span style="font-size:10px; font-weight:700; color:#64748b; background:#f1f5f9; padding:2px 6px; border-radius:6px; cursor:pointer;">This Month ▾</span>
+          </div>
+          
+          <div class="inc-exp-content-row">
+            <div class="inc-exp-left-side">
+              <div class="mini-line-label">Income</div>
+              <div class="mini-line-val" id="lowerIncVal" style="color:#10b981;">₹0</div>
+              <div class="mini-progress-track"><div class="mini-progress-fill-inc" id="incBar" style="width: 50%;"></div></div>
+
+              <div class="mini-line-label">Expense</div>
+              <div class="mini-line-val" id="lowerExpVal" style="color:#ef4444;">₹0</div>
+              <div class="mini-progress-track"><div class="mini-progress-fill-exp" id="expBar" style="width: 25%;"></div></div>
+            </div>
+
+            <div class="inc-exp-right-side">
+              <div class="donut-circle">
+                <div class="donut-inner">
+                  <div style="font-size:8.5px; font-weight:700; color:#64748b;">Net</div>
+                  <div style="font-size:10px; font-weight:900; color:#0f172a;" id="donutNetVal">₹0</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions Box (Last 3) -->
+        <div class="lower-card-box">
+          <div class="lower-card-header">
+            <span class="lower-card-title">Recent Transactions</span>
+            <a class="view-all-link" onclick="switchSection('reports')">View All</a>
+          </div>
+          
+          <div id="recentTransactionsList">
+            <div style="font-size:11px; color:#94a3b8; text-align:center; padding:12px 0;">No transactions yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. TRANSACTION MODULE -->
+    <div id="transaction-section" class="app-screen-section" style="display:none;">
+      
+      <!-- Replaced Tab Switcher -->
+      <div class="sheet-container" style="padding-bottom: 6px;">
+        <div class="sub-nav-wrapper">
+          <button id="txTabBtn-sheet" class="sub-nav-tabs-btn active" onclick="switchTxTab('sheet')">Cashbook Sheet</button>
+          <button id="txTabBtn-rec" class="sub-nav-tabs-btn" onclick="switchTxTab('rec')">Receipt (Due In)</button>
+          <button id="txTabBtn-pay" class="sub-nav-tabs-btn" onclick="switchTxTab('pay')">Payment (Due Out)</button>
+        </div>
+      </div>
+
+      <!-- Tx Sub-view 1: Sheet -->
+      <div id="txView-sheet" class="sheet-container">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+          <div id="currentPageBadge" class="current-page-badge" onclick="openRenameModal()" style="font-size:11.5px; font-weight:700; color:#2563eb; background:#eff6ff; padding:4px 10px; border-radius:6px; border:1px solid #bfdbfe; cursor:pointer;">
+            <span id="badgePageTitle">Page 1</span> ✎
+          </div>
+          <button class="plus-btn" onclick="copyAndAddNewSheet()" style="background:#10b981; color:#fff; border:none; padding:4px 12px; border-radius:6px; font-weight:bold; font-size:14px;">+</button>
+        </div>
+
+        <div class="table-scroll" id="cashTableContainer">
+          <table id="cashTable">
+            <thead>
+              <tr>
+                <th style="width: 22%;">Date</th>
+                <th style="width: 32%;">Particular</th>
+                <th style="width: 15%;">Income</th>
+                <th style="width: 15%;">Expense</th>
+                <th style="width: 16%;">Balance</th>
+                <th style="width: 5%;"></th>
+              </tr>
+            </thead>
+            <tbody id="sheetTableBody"></tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td colspan="2" class="num">Total</td>
+                <td id="totalIncome" class="num">0</td>
+                <td id="totalExp" class="num exp-num">0</td>
+                <td id="totalBal" class="num">0</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+          <button class="add-row-btn" onclick="openQuickEntryModal('cashbook')">+ Add Row <span style="font-size:10px; opacity:0.85;">(Ctrl+I)</span></button>
+          <button class="btn-toggle-bal" id="toggleBalBtn" onclick="toggleBalPanel()">Available Balance</button>
+        </div>
+
+        <div id="balSummaryPanel" class="bal-summary-panel" style="display: none; margin-top:8px; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+          <div style="font-weight: 700; font-size:11.5px; margin-bottom: 6px;">Month-Wise Balance:</div>
+          <div class="month-bal-list" id="monthBalList"></div>
+          <div style="border-top:1px solid #cbd5e1; padding-top:6px; margin-top:6px; display:flex; justify-content:space-between; font-weight:800; font-size:12px;">
+            <span>Total Available:</span>
+            <span id="allMonthsTotalBal">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tx Sub-view 2: Receipts -->
+      <div id="txView-rec" class="sheet-container" style="display:none;">
+        <h4 style="margin-bottom:8px; font-size:13.5px; font-weight:800;">Receipts (Accounts Receivable / Due In)</h4>
+        <div class="table-scroll" id="recTableContainer">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Debtor Name</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="recTableBody"></tbody>
+          </table>
+        </div>
+        <button class="add-row-btn" onclick="openQuickEntryModal('receivable')">+ Add Receipt</button>
+      </div>
+
+      <!-- Tx Sub-view 3: Payments -->
+      <div id="txView-pay" class="sheet-container" style="display:none;">
+        <h4 style="margin-bottom:8px; font-size:13.5px; font-weight:800;">Payments (Accounts Payable / Due Out)</h4>
+        <div class="table-scroll" id="payTableContainer">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Creditor Name</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="payTableBody"></tbody>
+          </table>
+        </div>
+        <button class="add-row-btn" onclick="openQuickEntryModal('payable')">+ Add Payment</button>
+      </div>
+    </div>
+
+    <!-- 3. REPORTS MODULE -->
+    <div id="ledger-section" class="app-screen-section sheet-container" style="display:none;">
+      <h3 style="margin-bottom: 10px; font-size: 15px; font-weight:800;">Statement & Reports Center</h3>
+      
+      <div class="filter-box">
+        <div class="filter-group">
+          <label>Report Type:</label>
+          <select id="reportTypeSelect" onchange="handleReportTypeChange()">
+            <option value="ledger">Account / Party Ledger</option>
+            <option value="daywise">Day-wise Summary</option>
+            <option value="monthwise">Month-wise Summary</option>
+            <option value="yearwise">Year-wise Summary</option>
+            <option value="receiptpayment">Receipt &amp; Payment Account</option>
+            <option value="trialbalance">Trial Balance</option>
+            <option value="profitloss">Profit &amp; Loss Account</option>
+            <option value="balancesheet">Balance Sheet</option>
+          </select>
+        </div>
+
+        <div class="filter-group" id="accountFilterGroup">
+          <label>Filter Party / Account:</label>
+          <select id="ledgerAccountSelect" onchange="renderActiveReport()">
+            <option value="ALL">-- All Recorded Parties --</option>
+          </select>
+        </div>
+
+        <div class="filter-group" id="searchFilterGroup">
+          <label>Search Keyword:</label>
+          <input type="text" id="reportSearchInput" placeholder="Filter descriptions..." oninput="renderActiveReport()">
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead id="reportTableHead"></thead>
+          <tbody id="ledgerDetailBody"></tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td id="reportFootLabel" class="num">Total</td>
+              <td id="ledgerFilterIn" class="num">0</td>
+              <td id="ledgerFilterOut" class="num exp-num">0</td>
+              <td id="ledgerFilterBalance" class="num">0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div id="finalReportBox" style="display:none;"></div>
+    </div>
+
+    <!-- 4. SETTINGS HUB -->
+    <div id="settings-section" class="app-screen-section sheet-container" style="display:none;">
+      <h3 style="margin-bottom: 10px; font-size: 14px; font-weight:800;">App Settings & Data Hub</h3>
+      
+      <div class="settings-list">
+        <div class="settings-item" onclick="exportDataBackup()">
+          <span>📤 Backup & Export JSON</span>
+          <span style="color:#2563eb;">Download ↓</span>
+        </div>
+
+        <div class="settings-item" onclick="document.getElementById('importBackupFile').click()">
+          <span>📥 Restore & Import JSON</span>
+          <span style="color:#10b981;">Upload ↑</span>
+        </div>
+        <input type="file" id="importBackupFile" accept=".json" style="display:none;" onchange="importDataBackup(event)">
+
+        <div class="settings-item" onclick="openAppNameModal()">
+          <span>✏️ Edit App Header Title</span>
+          <span style="color:#64748b;">Edit →</span>
+        </div>
+
+        <div class="settings-item" onclick="openChangePasswordModal()">
+          <span>🔒 Change Password</span>
+          <span style="color:#64748b;">Update →</span>
+        </div>
+
+        <div class="settings-item" id="installSettingsItem" onclick="installFinTrack()">
+          <span>📲 Install App (Add to Home Screen)</span>
+          <span style="color:#10b981;">Install →</span>
+        </div>
+      </div>
+
+      <div style="margin-top:14px; text-align:center; font-size:10px; color:#94a3b8; font-weight:600;">
+        FinTrack v2.0.0 • Secured & Encrypted Storage
+      </div>
+    </div>
+
+    <!-- Bottom Sticky Navigation Bar (Mobile Only) -->
+    <nav class="bottom-app-bar">
+      <button class="bottom-nav-item active" id="botNav-dashboard" onclick="switchSection('dashboard')">
+        <span class="icon">🏠</span>
+        <span>Dashboard</span>
+      </button>
+      <button class="bottom-nav-item" id="botNav-transaction" onclick="switchSection('transaction')">
+        <span class="icon">📑</span>
+        <span>Transaction</span>
+      </button>
+      <button class="bottom-nav-item" id="botNav-reports" onclick="switchSection('reports')">
+        <span class="icon">📈</span>
+        <span>Reports</span>
+      </button>
+      <button class="bottom-nav-item" id="botNav-settings" onclick="switchSection('settings')">
+        <span class="icon">⚙️</span>
+        <span>Settings</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- QUICK ENTRY MODAL -->
+  <div class="modal-overlay" id="quickEntryModal">
+    <div class="modal-box" style="max-width: 380px;">
+      <h4 id="quickEntryModalTitle">New Transaction Entry</h4>
+      
+      <div style="text-align:left; margin-bottom: 6px;">
+        <label style="font-size: 10.5px; font-weight:700; color:#64748b;">Date</label>
+        <input type="date" id="qeDate" class="modal-input-field">
+      </div>
+
+      <div style="text-align:left; margin-bottom: 6px; position:relative;">
+        <label id="qePartLabel" style="font-size: 10.5px; font-weight:700; color:#64748b;">Particular / Party</label>
+        <input type="text" id="qeParticular" class="modal-input-field" placeholder="Enter name or description" oninput="handleLiveSuggestions(this)" onblur="setTimeout(hideAutocompleteMenu, 200)">
+      </div>
+
+      <div id="qeCashbookFields">
+        <div style="display:flex; gap:8px;">
+          <div style="flex:1; text-align:left;">
+            <label style="font-size: 10.5px; font-weight:700; color:#059669;">Income (+)</label>
+            <input type="number" inputmode="numeric" id="qeIncome" class="modal-input-field" placeholder="0">
+          </div>
+          <div style="flex:1; text-align:left;">
+            <label style="font-size: 10.5px; font-weight:700; color:#dc2626;">Expense (-)</label>
+            <input type="number" inputmode="numeric" id="qeExp" class="modal-input-field" placeholder="0">
+          </div>
+        </div>
+      </div>
+
+      <div id="qeDueFields" style="display: none;">
+        <div style="text-align:left; margin-bottom: 6px;">
+          <label style="font-size: 10.5px; font-weight:700; color:#64748b;">Description (Optional)</label>
+          <input type="text" id="qeDesc" class="modal-input-field" placeholder="Notes">
+        </div>
+        <div style="text-align:left;">
+          <label style="font-size: 10.5px; font-weight:700; color:#2563eb;">Amount (₹)</label>
+          <input type="number" inputmode="numeric" id="qeAmount" class="modal-input-field" placeholder="0">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="modal-btn modal-cancel-btn" onclick="closeModal('quickEntryModal')">Cancel</button>
+        <button class="modal-btn modal-save-btn" onclick="submitQuickEntry()">Save Entry</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logout Confirmation Modal -->
+  <div class="modal-overlay" id="simpleLogoutModal">
+    <div class="modal-box">
+      <h4 style="color:#ef4444;">Confirm Logout</h4>
+      <p style="font-size:12.5px; color:#64748b; margin-bottom:14px;">Are you sure you want to log out?</p>
+      <div class="modal-actions">
+        <button class="modal-btn modal-cancel-btn" style="flex:1;" onclick="closeModal('simpleLogoutModal')">No</button>
+        <button class="modal-btn modal-del-btn" style="flex:1;" onclick="executeConfirmedLogout()">Yes, Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page Rename Modal -->
+  <div class="modal-overlay" id="pageModal">
+    <div class="modal-box">
+      <h4 id="modalHeading">Edit Page Name</h4>
+      <input type="text" class="modal-input-field" id="modalPageNameInput" placeholder="Enter page name">
+      <div class="modal-actions">
+        <button class="modal-btn modal-del-btn" id="modalDeleteBtn" onclick="deleteCurrentSheet()">Delete</button>
+        <div style="display:flex; gap:6px;">
+          <button class="modal-btn modal-cancel-btn" onclick="closeModal('pageModal')">Cancel</button>
+          <button class="modal-btn modal-save-btn" onclick="savePageModal()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Header Title Modal -->
+  <div class="modal-overlay" id="appNameModal">
+    <div class="modal-box">
+      <h4>Edit App Header Name</h4>
+      <input type="text" class="modal-input-field" id="modalAppNameInput" placeholder="Enter brand name">
+      <div class="modal-actions" style="justify-content: flex-end; gap:6px;">
+        <button class="modal-btn modal-cancel-btn" onclick="closeModal('appNameModal')">Cancel</button>
+        <button class="modal-btn modal-save-btn" onclick="saveAppName()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div class="modal-overlay" id="changePasswordModal">
+    <div class="modal-box">
+      <h4 style="color:#2563eb;">Change Password</h4>
+      <input type="password" id="newPasswordInput" class="modal-input-field" placeholder="New Password (min 6 chars)">
+      <div class="modal-actions">
+        <button class="modal-btn modal-cancel-btn" onclick="closeModal('changePasswordModal')">Cancel</button>
+        <button class="modal-btn modal-save-btn" onclick="handleUpdatePassword()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIN Reset Modal -->
+  <div class="modal-overlay" id="forgotModal">
+    <div class="modal-box">
+      <h3>Reset Password</h3>
+      <p style="font-size:11.5px; color:#64748b; margin-bottom:10px;">Enter your username, 4-Digit Recovery PIN, and new password.</p>
+      <input type="text" id="resetUsernameInput" class="modal-input-field" placeholder="Username">
+      <input type="number" id="resetPinInput" inputmode="numeric" class="modal-input-field" placeholder="4-Digit Recovery PIN">
+      <input type="password" id="resetNewPassInput" class="modal-input-field" placeholder="New Password">
+      <button class="fintrack-btn" onclick="handleInstantPinPasswordReset()">Reset Password</button>
+      <div style="margin-top:10px;"><a onclick="closeModal('forgotModal')" style="font-size:11.5px; color:#64748b; cursor:pointer;">Cancel</a></div>
+    </div>
+  </div>
+
+  <script>
+    /* Toast */
+    let toastTimer = null;
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('fintrack-toast');
+      const msg = document.getElementById('toast-msg');
+      const icon = document.getElementById('toast-icon');
+
+      clearTimeout(toastTimer);
+      toast.className = '';
+      toast.classList.add(type === 'success' ? 'success' : 'error');
+      icon.innerText = type === 'success' ? '✓' : '✕';
+      msg.innerText = message;
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    function togglePasswordVisibility(id, btn) {
+      const el = document.getElementById(id);
+      el.type = el.type === 'password' ? 'text' : 'password';
+      btn.innerText = el.type === 'password' ? '👁' : '🙈';
+    }
+
+    /* Supabase Config */
+    const SUPABASE_URL = "https://xfdgjhgarjbtzhhqvdax.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_p0XRNWTalWnZ5mfCcDdqFw_dmM71tVr";
+    const fintrackSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let fintrackAuthUser = null;
+    let fintrackSaveTimer = null;
+
+    function fintrackEmail(u) { return `${String(u || "").trim().toLowerCase()}@fintrack.local`; }
+
+    async function fintrackRegister(username, password, pin) {
+      const cleanUser = String(username).trim().toLowerCase();
+      const { data, error } = await fintrackSupabase.auth.signUp({
+        email: fintrackEmail(cleanUser),
+        password: password,
+        options: { data: { username: cleanUser } }
+      });
+      if (error) throw error;
+      if (String(pin).trim()) {
+        const { error: pinErr } = await fintrackSupabase.rpc("set_recovery_pin", { p_pin: String(pin).trim() });
+        if (pinErr) showToast("Recovery PIN not saved: " + pinErr.message, "error");
+      }
+      fintrackAuthUser = data.user || null;
+      return data;
+    }
+
+    async function fintrackLogin(username, password) {
+      const cleanUser = String(username).trim().toLowerCase();
+      const { data, error } = await fintrackSupabase.auth.signInWithPassword({
+        email: fintrackEmail(cleanUser),
+        password: password
+      });
+      if (error) throw error;
+      fintrackAuthUser = data.user || null;
+      return data;
+    }
+
+    async function saveToSupabase(showNotify = true) {
+      if (!fintrackAuthUser) return false;
+      const row = {
+        user_id: fintrackAuthUser.id,
+        sheets: Array.isArray(sheets) ? sheets : [],
+        receivables: Array.isArray(receivables) ? receivables : [],
+        payables: Array.isArray(payables) ? payables : [],
+        app_name: appTitle || "FinTrack",
+        updated_at: new Date().toISOString()
+      };
+      const { error } = await fintrackSupabase.from("fintrack_data").upsert(row, { onConflict: "user_id" });
+      if (error) {
+        if (showNotify) showToast("Save failed", "error");
+        return false;
+      }
+      if (showNotify) showToast("Cloud Synced Successfully!", "success");
+      return true;
+    }
+
+    async function loadFromSupabase() {
+      if (!fintrackAuthUser) return false;
+      const { data } = await fintrackSupabase.from("fintrack_data").select("sheets,receivables,payables,app_name").eq("user_id", fintrackAuthUser.id).maybeSingle();
+      if (data) {
+        if (data.sheets && data.sheets.length > 0) sheets = data.sheets;
+        receivables = Array.isArray(data.receivables) ? data.receivables : [];
+        payables = Array.isArray(data.payables) ? data.payables : [];
+        if (data.app_name) {
+          appTitle = data.app_name;
+          document.getElementById('appBrandTitle').innerText = appTitle;
+        }
+      }
+      renderDashboard();
+      renderSheet();
+      renderDueTables();
+      if (isBalPanelVisible) renderBalances();
+      return true;
+    }
+
+    window.syncWithGoogleDrive = function(notify = false) { return saveToSupabase(notify); };
+
+    /* App State */
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const currentMonthYear = now.toLocaleString('default', { month: 'short' }) + ' ' + String(now.getFullYear()).slice(-2);
+
+    let isBalPanelVisible = false;
+    let isCreatingNew = false;
+    let authMode = 'login';
+    let currentUser = JSON.parse(localStorage.getItem('cashbook_active_user')) || null;
+    let appTitle = localStorage.getItem('cashbook_app_name') || "FinTrack";
+
+    let sheets = [{ name: currentMonthYear, rows: [] }];
+    let receivables = [];
+    let payables = [];
+    let currentSheetIndex = 0;
+
+    function getUserStorageKey(suffix) {
+      return `cashbook_${currentUser ? currentUser.username + '_' : 'guest_'}${suffix}`;
+    }
+
+    async function checkAuthSession() {
+      const { data } = await fintrackSupabase.auth.getSession();
+      const sessionUser = data?.session?.user;
+      if (sessionUser) {
+        fintrackAuthUser = sessionUser;
+        currentUser = { username: sessionUser.user_metadata?.username || sessionUser.email.split('@')[0] };
+        localStorage.setItem('cashbook_active_user', JSON.stringify(currentUser));
+        
+        document.getElementById('auth-screen-container').style.display = 'none';
+        document.getElementById('main-app-content').style.display = 'block';
+        document.getElementById('currentUserNameLabel').innerText = currentUser.username;
+        document.getElementById('heroUserName').innerText = currentUser.username;
+        document.getElementById('appBrandTitle').innerText = appTitle;
+        
+        initUserData();
+        await loadFromSupabase();
+      } else {
+        document.getElementById('auth-screen-container').style.display = 'flex';
+        document.getElementById('main-app-content').style.display = 'none';
+      }
+    }
+
+    function initUserData() {
+      const s = localStorage.getItem(getUserStorageKey('sheets'));
+      if (s) { try { sheets = JSON.parse(s); } catch(e){} }
+      const r = localStorage.getItem(getUserStorageKey('receivables'));
+      if (r) { try { receivables = JSON.parse(r); } catch(e){} }
+      const p = localStorage.getItem(getUserStorageKey('payables'));
+      if (p) { try { payables = JSON.parse(p); } catch(e){} }
+      currentSheetIndex = Math.max(0, sheets.length - 1);
+
+      renderDashboard();
+      renderSheet();
+      renderDueTables();
+    }
+
+    function saveAllData() {
+      try {
+        localStorage.setItem(getUserStorageKey('sheets'), JSON.stringify(sheets));
+        localStorage.setItem(getUserStorageKey('receivables'), JSON.stringify(receivables));
+        localStorage.setItem(getUserStorageKey('payables'), JSON.stringify(payables));
+      } catch(e){}
+      renderDashboard();
+      if (isBalPanelVisible) renderBalances();
+      clearTimeout(fintrackSaveTimer);
+      fintrackSaveTimer = setTimeout(() => saveToSupabase(false), 650);
+    }
+
+    /* Live Autocomplete */
+    function getAllRecordedNames() {
+      const names = new Set();
+      sheets.forEach(s => (s.rows || []).forEach(r => { if (r.particular && r.particular.trim()) names.add(r.particular.trim()); }));
+      receivables.forEach(r => { if (r.name && r.name.trim()) names.add(r.name.trim()); });
+      payables.forEach(p => { if (p.name && p.name.trim()) names.add(p.name.trim()); });
+      return Array.from(names);
+    }
+
+    let activeAutocompleteInput = null;
+
+    function handleLiveSuggestions(inputEl) {
+      activeAutocompleteInput = inputEl;
+      const menu = document.getElementById('liveAutocompleteMenu');
+      const val = (inputEl.value || '').trim().toLowerCase();
+
+      if (!val) {
+        menu.style.display = 'none';
+        return;
+      }
+
+      const allNames = getAllRecordedNames();
+      const matches = allNames.filter(n => n.toLowerCase().startsWith(val));
+
+      if (matches.length === 0) {
+        menu.style.display = 'none';
+        return;
+      }
+
+      menu.innerHTML = '';
+      matches.forEach(name => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.innerText = name;
+        item.onmousedown = function(e) {
+          e.preventDefault();
+          selectAutocompleteItem(name);
+        };
+        menu.appendChild(item);
+      });
+
+      const rect = inputEl.getBoundingClientRect();
+      menu.style.left = `${rect.left + window.scrollX}px`;
+      menu.style.top = `${rect.bottom + window.scrollY + 2}px`;
+      menu.style.width = `${Math.max(rect.width, 130)}px`;
+      menu.style.display = 'block';
+    }
+
+    function selectAutocompleteItem(name) {
+      if (activeAutocompleteInput) {
+        activeAutocompleteInput.value = name;
+        activeAutocompleteInput.dispatchEvent(new Event('change'));
+      }
+      hideAutocompleteMenu();
+    }
+
+    function hideAutocompleteMenu() {
+      const menu = document.getElementById('liveAutocompleteMenu');
+      if (menu) menu.style.display = 'none';
+    }
+
+    document.addEventListener('click', function(e) {
+      if (activeAutocompleteInput && e.target !== activeAutocompleteInput && !e.target.closest('#liveAutocompleteMenu')) {
+        hideAutocompleteMenu();
+      }
+    });
+
+    /* Quick Entry Modal Controller */
+    let currentEntryTarget = 'cashbook';
+
+    function openQuickEntryModal(target = 'cashbook') {
+      currentEntryTarget = target;
+      document.getElementById('qeDate').value = today;
+      document.getElementById('qeParticular').value = '';
+
+      if (target === 'cashbook') {
+        document.getElementById('quickEntryModalTitle').innerText = 'Add Cashbook Row';
+        document.getElementById('qePartLabel').innerText = 'Particular';
+        document.getElementById('qeParticular').placeholder = 'e.g. Salary, Rent, Grocery';
+        document.getElementById('qeCashbookFields').style.display = 'block';
+        document.getElementById('qeDueFields').style.display = 'none';
+        document.getElementById('qeIncome').value = '';
+        document.getElementById('qeExp').value = '';
+      } else if (target === 'receivable') {
+        document.getElementById('quickEntryModalTitle').innerText = 'Add Due In (Receipt)';
+        document.getElementById('qePartLabel').innerText = 'Debtor / Customer Name';
+        document.getElementById('qeParticular').placeholder = 'e.g. Ramu, Office A';
+        document.getElementById('qeCashbookFields').style.display = 'none';
+        document.getElementById('qeDueFields').style.display = 'block';
+        document.getElementById('qeDesc').value = '';
+        document.getElementById('qeAmount').value = '';
+      } else if (target === 'payable') {
+        document.getElementById('quickEntryModalTitle').innerText = 'Add Due Out (Payment)';
+        document.getElementById('qePartLabel').innerText = 'Creditor / Vendor Name';
+        document.getElementById('qeParticular').placeholder = 'e.g. Vendor B, Supplier';
+        document.getElementById('qeCashbookFields').style.display = 'none';
+        document.getElementById('qeDueFields').style.display = 'block';
+        document.getElementById('qeDesc').value = '';
+        document.getElementById('qeAmount').value = '';
+      }
+
+      document.getElementById('quickEntryModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('qeParticular').focus(), 80);
+    }
+
+    function submitQuickEntry() {
+      const dateVal = document.getElementById('qeDate').value || today;
+      const particularVal = document.getElementById('qeParticular').value.trim();
+
+      if (!particularVal) {
+        return showToast("Please enter particular/party name", "error");
+      }
+
+      if (currentEntryTarget === 'cashbook') {
+        const incVal = parseFloat(document.getElementById('qeIncome').value) || 0;
+        const expVal = parseFloat(document.getElementById('qeExp').value) || 0;
+
+        if (incVal === 0 && expVal === 0) {
+          return showToast("Please enter either Income or Expense", "error");
+        }
+
+        if (!sheets[currentSheetIndex].rows) sheets[currentSheetIndex].rows = [];
+        sheets[currentSheetIndex].rows.push({
+          date: dateVal,
+          particular: particularVal,
+          income: incVal,
+          exp: expVal
+        });
+
+        saveAllData();
+        renderSheet();
+
+        setTimeout(() => {
+          const container = document.getElementById('cashTableContainer');
+          if (container) container.scrollTop = container.scrollHeight;
+        }, 50);
+
+      } else if (currentEntryTarget === 'receivable') {
+        const amt = parseFloat(document.getElementById('qeAmount').value) || 0;
+        const descVal = document.getElementById('qeDesc').value.trim();
+
+        if (amt === 0) return showToast("Please enter receivable amount", "error");
+
+        receivables.push({ date: dateVal, name: particularVal, desc: descVal, amount: amt });
+        saveAllData();
+        renderDueTables();
+
+      } else if (currentEntryTarget === 'payable') {
+        const amt = parseFloat(document.getElementById('qeAmount').value) || 0;
+        const descVal = document.getElementById('qeDesc').value.trim();
+
+        if (amt === 0) return showToast("Please enter payable amount", "error");
+
+        payables.push({ date: dateVal, name: particularVal, desc: descVal, amount: amt });
+        saveAllData();
+        renderDueTables();
+      }
+
+      closeModal('quickEntryModal');
+      showToast("Entry added successfully!", "success");
+    }
+
+    /* Available Balance Panel */
+    function toggleBalPanel() {
+      const panel = document.getElementById('balSummaryPanel');
+      const btn = document.getElementById('toggleBalBtn');
+      isBalPanelVisible = !isBalPanelVisible;
+
+      if (isBalPanelVisible) {
+        panel.style.display = 'block';
+        btn.innerText = 'Hide Balance';
+        renderBalances();
+      } else {
+        panel.style.display = 'none';
+        btn.innerText = 'Available Balance';
+      }
+    }
+
+    function renderBalances() {
+      const listContainer = document.getElementById('monthBalList');
+      if (!listContainer) return;
+      listContainer.innerHTML = '';
+      let totalAccumulated = 0;
+
+      sheets.forEach((sheet, idx) => {
+        let sheetBal = 0;
+        (sheet.rows || []).forEach(r => {
+          sheetBal += (parseFloat(r.income) || 0) - (parseFloat(r.exp) || 0);
+        });
+
+        totalAccumulated += sheetBal;
+        const displayBal = (sheetBal >= 0 ? '+' : '') + sheetBal;
+
+        const item = document.createElement('div');
+        item.style.cssText = 'padding:7px 10px; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:11.5px; margin-bottom:4px; cursor:pointer;';
+        item.title = "Click to open this sheet page";
+        item.onclick = () => {
+          currentSheetIndex = idx;
+          renderSheet();
+        };
+        item.innerHTML = `
+          <span><strong>${sheet.name}:</strong></span>
+          <span style="font-weight:700; color:${sheetBal < 0 ? '#dc2626' : '#10b981'};">${displayBal}</span>
+        `;
+        listContainer.appendChild(item);
+      });
+
+      const totalEl = document.getElementById('allMonthsTotalBal');
+      if (totalEl) {
+        totalEl.innerText = (totalAccumulated >= 0 ? '+' : '') + totalAccumulated;
+        totalEl.style.color = totalAccumulated < 0 ? '#dc2626' : '#10b981';
+      }
+    }
+
+    /* Dashboard Calculations & Rendering Recent Transactions */
+    function renderDashboard() {
+      let totalInc = 0, totalExp = 0;
+      const allEntries = [];
+
+      sheets.forEach(s => (s.rows || []).forEach(r => {
+        const inc = parseFloat(r.income) || 0;
+        const exp = parseFloat(r.exp) || 0;
+        totalInc += inc;
+        totalExp += exp;
+        if (inc > 0 || exp > 0) {
+          allEntries.push({
+            date: r.date,
+            title: r.particular || 'Cash Entry',
+            type: inc > 0 ? 'inc' : 'exp',
+            amount: inc > 0 ? inc : exp
+          });
+        }
+      }));
+
+      receivables.forEach(r => {
+        const amt = parseFloat(r.amount) || 0;
+        if (amt > 0) {
+          allEntries.push({ date: r.date, title: r.name || 'Receipt', type: 'inc', amount: amt });
+        }
+      });
+
+      payables.forEach(p => {
+        const amt = parseFloat(p.amount) || 0;
+        if (amt > 0) {
+          allEntries.push({ date: p.date, title: p.name || 'Payment', type: 'exp', amount: amt });
+        }
+      });
+
+      const netCash = totalInc - totalExp;
+      let totalDueIn = receivables.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+      let totalDueOut = payables.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+      const projNet = netCash + totalDueIn - totalDueOut;
+
+      document.getElementById('dashNetCash').innerText = `₹${netCash.toLocaleString()}`;
+      document.getElementById('dashTotalIncome').innerText = `₹${totalInc.toLocaleString()}`;
+      document.getElementById('dashTotalExp').innerText = `₹${totalExp.toLocaleString()}`;
+      document.getElementById('dashDueIn').innerText = `₹${totalDueIn.toLocaleString()}`;
+      document.getElementById('dashDueOut').innerText = `₹${totalDueOut.toLocaleString()}`;
+      document.getElementById('dashProjectedNet').innerText = `₹${projNet.toLocaleString()}`;
+      document.getElementById('heroNetBalance').innerText = `₹${netCash.toLocaleString()}`;
+
+      document.getElementById('lowerIncVal').innerText = `₹${totalInc.toLocaleString()}`;
+      document.getElementById('lowerExpVal').innerText = `₹${totalExp.toLocaleString()}`;
+      document.getElementById('donutNetVal').innerText = `₹${netCash.toLocaleString()}`;
+      const maxVal = Math.max(totalInc, totalExp, 1);
+      document.getElementById('incBar').style.width = `${Math.min(100, (totalInc / maxVal) * 100)}%`;
+      document.getElementById('expBar').style.width = `${Math.min(100, (totalExp / maxVal) * 100)}%`;
+
+      const recentListContainer = document.getElementById('recentTransactionsList');
+      recentListContainer.innerHTML = '';
+
+      if (allEntries.length === 0) {
+        recentListContainer.innerHTML = '<div style="font-size:11px; color:#94a3b8; text-align:center; padding:12px 0;">No transactions yet</div>';
+      } else {
+        const lastThree = allEntries.slice(-3).reverse();
+        lastThree.forEach(tx => {
+          const isInc = tx.type === 'inc';
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'recent-tx-item';
+          itemDiv.innerHTML = `
+            <div class="recent-tx-left">
+              <div class="recent-tx-icon ${isInc ? 'tx-inc-bg' : 'tx-exp-bg'}">${isInc ? '↓' : '↑'}</div>
+              <div>
+                <div class="recent-tx-title">${tx.title}</div>
+                <div class="recent-tx-sub">${tx.date || 'Today'}</div>
+              </div>
+            </div>
+            <div class="recent-tx-right">
+              <div class="recent-tx-amt" style="color: ${isInc ? '#059669' : '#dc2626'};">${isInc ? '+' : '-'}₹${tx.amount.toLocaleString()}</div>
+              <div class="recent-tx-dots">⋮</div>
+            </div>
+          `;
+          recentListContainer.appendChild(itemDiv);
+        });
+      }
+    }
+
+    /* Cashbook Sheet Rendering */
+    function renderSheet() {
+      const badge = document.getElementById('badgePageTitle');
+      if (sheets[currentSheetIndex] && badge) badge.innerText = sheets[currentSheetIndex].name;
+
+      const tbody = document.getElementById('sheetTableBody');
+      tbody.innerHTML = '';
+      if (!sheets[currentSheetIndex]) return;
+
+      (sheets[currentSheetIndex].rows || []).forEach((row, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input type="date" value="${row.date}" onchange="sheets[currentSheetIndex].rows[${i}].date=this.value;saveAllData();"></td>
+          <td><input type="text" value="${row.particular}" placeholder="Particular" oninput="handleLiveSuggestions(this)" onblur="setTimeout(hideAutocompleteMenu, 200)" onchange="sheets[currentSheetIndex].rows[${i}].particular=this.value;saveAllData();"></td>
+          <td><input type="number" inputmode="numeric" class="num" value="${row.income === 0 ? '' : row.income}" placeholder="0" oninput="sheets[currentSheetIndex].rows[${i}].income=parseFloat(this.value)||0;saveAllData();calculateCashTotals();"></td>
+          <td><input type="number" inputmode="numeric" class="num exp-num" value="${row.exp === 0 ? '' : row.exp}" placeholder="0" oninput="sheets[currentSheetIndex].rows[${i}].exp=parseFloat(this.value)||0;saveAllData();calculateCashTotals();"></td>
+          <td class="num" id="bal-cell-${i}">0</td>
+          <td><button class="action-btn" onclick="sheets[currentSheetIndex].rows.splice(${i},1);saveAllData();renderSheet();">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      calculateCashTotals();
+      if (isBalPanelVisible) renderBalances();
+    }
+
+    function calculateCashTotals() {
+      if (!sheets[currentSheetIndex]) return;
+      let bal = 0, inc = 0, exp = 0;
+      (sheets[currentSheetIndex].rows || []).forEach((r, i) => {
+        const inVal = parseFloat(r.income) || 0;
+        const outVal = parseFloat(r.exp) || 0;
+        bal += (inVal - outVal);
+        inc += inVal;
+        exp += outVal;
+        const cell = document.getElementById(`bal-cell-${i}`);
+        if (cell) cell.innerText = bal;
+      });
+      document.getElementById('totalIncome').innerText = inc;
+      document.getElementById('totalExp').innerText = exp;
+      document.getElementById('totalBal').innerText = bal;
+    }
+
+    /* Receivables & Payables Table Rendering */
+    function renderDueTables() {
+      const rBody = document.getElementById('recTableBody');
+      rBody.innerHTML = '';
+      receivables.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input type="date" value="${r.date}" onchange="receivables[${i}].date=this.value;saveAllData();"></td>
+          <td><input type="text" value="${r.name}" placeholder="Party Name" oninput="handleLiveSuggestions(this)" onblur="setTimeout(hideAutocompleteMenu, 200)" onchange="receivables[${i}].name=this.value;saveAllData();"></td>
+          <td><input type="text" value="${r.desc}" placeholder="Desc" onchange="receivables[${i}].desc=this.value;saveAllData();"></td>
+          <td><input type="number" inputmode="numeric" class="num" value="${r.amount === 0 ? '' : r.amount}" placeholder="0" oninput="receivables[${i}].amount=parseFloat(this.value)||0;saveAllData();"></td>
+          <td><button class="action-btn" onclick="receivables.splice(${i},1);saveAllData();renderDueTables();">✕</button></td>
+        `;
+        rBody.appendChild(tr);
+      });
+
+      const pBody = document.getElementById('payTableBody');
+      pBody.innerHTML = '';
+      payables.forEach((p, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input type="date" value="${p.date}" onchange="payables[${i}].date=this.value;saveAllData();"></td>
+          <td><input type="text" value="${p.name}" placeholder="Party Name" oninput="handleLiveSuggestions(this)" onblur="setTimeout(hideAutocompleteMenu, 200)" onchange="payables[${i}].name=this.value;saveAllData();"></td>
+          <td><input type="text" value="${p.desc}" placeholder="Desc" onchange="payables[${i}].desc=this.value;saveAllData();"></td>
+          <td><input type="number" inputmode="numeric" class="num exp-num" value="${p.amount === 0 ? '' : p.amount}" placeholder="0" oninput="payables[${i}].amount=parseFloat(this.value)||0;saveAllData();"></td>
+          <td><button class="action-btn" onclick="payables.splice(${i},1);saveAllData();renderDueTables();">✕</button></td>
+        `;
+        pBody.appendChild(tr);
+      });
+    }
+
+    /* Navigation Controller */
+    let navigationHistory = ['dashboard'];
+
+    function switchSection(section, fromHistory = false) {
+      const curSection = navigationHistory[navigationHistory.length - 1] || 'dashboard';
+
+      const sections = {
+        'dashboard': document.getElementById('dashboard-section'),
+        'transaction': document.getElementById('transaction-section'),
+        'reports': document.getElementById('ledger-section'),
+        'settings': document.getElementById('settings-section')
+      };
+
+      Object.keys(sections).forEach(key => {
+        const el = sections[key];
+        if (key === section) {
+          el.style.display = 'block';
+        } else {
+          el.style.display = 'none';
+        }
+      });
+
+      // Mobile bottom nav active sync
+      document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`botNav-${section}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      if (section === 'dashboard') {
+        navigationHistory = ['dashboard'];
+      } else {
+        if (!fromHistory && curSection !== section) {
+          navigationHistory.push(section);
+        }
+      }
+
+      if (section === 'dashboard') renderDashboard();
+      if (section === 'reports') { populateLedgerAccounts(); renderActiveReport(); }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function switchTxTab(subTab) {
+      document.getElementById('txView-sheet').style.display = subTab === 'sheet' ? 'block' : 'none';
+      document.getElementById('txView-rec').style.display = subTab === 'rec' ? 'block' : 'none';
+      document.getElementById('txView-pay').style.display = subTab === 'pay' ? 'block' : 'none';
+
+      document.getElementById('txTabBtn-sheet').className = subTab === 'sheet' ? 'sub-nav-tabs-btn active' : 'sub-nav-tabs-btn';
+      document.getElementById('txTabBtn-rec').className = subTab === 'rec' ? 'sub-nav-tabs-btn active' : 'sub-nav-tabs-btn';
+      document.getElementById('txTabBtn-pay').className = subTab === 'pay' ? 'sub-nav-tabs-btn active' : 'sub-nav-tabs-btn';
+
+      // Keep desktop top-nav buttons synchronized with transaction sub-tabs
+      document.querySelectorAll('.desktop-nav-btn').forEach(b => b.classList.remove('active'));
+      const deskBtn = document.getElementById(`deskNav-transaction-${subTab}`);
+      if (deskBtn) deskBtn.classList.add('active');
+    }
+
+    const originalSwitchSection = switchSection;
+    switchSection = function(section, fromHistory = false) {
+      originalSwitchSection(section, fromHistory);
+      
+      // Sync desktop top navigation buttons active state
+      document.querySelectorAll('.desktop-nav-btn').forEach(b => b.classList.remove('active'));
+      let activeBtnId = '';
+      if (section === 'transaction') {
+        // Find which sub-tab is currently visible
+        const isRec = document.getElementById('txView-rec').style.display === 'block';
+        const isPay = document.getElementById('txView-pay').style.display === 'block';
+        activeBtnId = isRec ? 'deskNav-transaction-rec' : (isPay ? 'deskNav-transaction-pay' : 'deskNav-transaction-sheet');
+      } else {
+        activeBtnId = 'deskNav-' + section;
+      }
+      const targetDeskBtn = document.getElementById(activeBtnId);
+      if (targetDeskBtn) targetDeskBtn.classList.add('active');
+    };
+
+    /* Reports & Statement Core Logic */
+    function populateLedgerAccounts() {
+      const sel = document.getElementById('ledgerAccountSelect');
+      sel.innerHTML = '<option value="ALL">-- All Recorded Parties --</option>';
+      const names = getAllRecordedNames();
+      names.forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.innerText = n;
+        sel.appendChild(opt);
+      });
+    }
+
+    function handleReportTypeChange() {
+      const type = document.getElementById('reportTypeSelect').value;
+      document.getElementById('accountFilterGroup').style.display = type === 'ledger' ? 'flex' : 'none';
+      document.getElementById('searchFilterGroup').style.display = type === 'ledger' ? 'flex' : 'none';
+      renderActiveReport();
+    }
+
+    function renderActiveReport() {
+      const type = document.getElementById('reportTypeSelect').value;
+      const isFinal = ['receiptpayment','trialbalance','profitloss','balancesheet'].includes(type);
+      document.querySelector('#ledger-section .table-scroll').style.display = isFinal ? 'none' : '';
+      document.getElementById('finalReportBox').style.display = isFinal ? 'block' : 'none';
+      if (isFinal) { renderFinalReport(type); return; }
+      const account = document.getElementById('ledgerAccountSelect').value;
+      const search = document.getElementById('reportSearchInput').value.toLowerCase();
+      const thead = document.getElementById('reportTableHead');
+      const tbody = document.getElementById('ledgerDetailBody');
+      tbody.innerHTML = '';
+
+      const entries = [];
+      sheets.forEach(s => (s.rows || []).forEach(r => {
+        if (r.date) {
+          entries.push({
+            date: r.date,
+            source: `Cashbook (${s.name})`,
+            particular: r.particular || '-',
+            inc: parseFloat(r.income) || 0,
+            exp: parseFloat(r.exp) || 0
+          });
+        }
+      }));
+      receivables.forEach(r => {
+        if (r.date) {
+          entries.push({
+            date: r.date,
+            source: 'Receipt (Due In)',
+            particular: r.name || '-',
+            inc: parseFloat(r.amount) || 0,
+            exp: 0
+          });
+        }
+      });
+      payables.forEach(p => {
+        if (p.date) {
+          entries.push({
+            date: p.date,
+            source: 'Payment (Due Out)',
+            particular: p.name || '-',
+            inc: 0,
+            exp: parseFloat(p.amount) || 0
+          });
+        }
+      });
+
+      let totalIn = 0, totalOut = 0;
+
+      if (type === 'ledger') {
+        thead.innerHTML = `
+          <tr>
+            <th style="width:20%;">Date</th>
+            <th style="width:22%;">Source</th>
+            <th style="width:26%;">Particular</th>
+            <th style="width:16%;" class="num">Income / In</th>
+            <th style="width:16%;" class="num exp-num">Exp / Out</th>
+          </tr>
+        `;
+
+        let filtered = entries;
+        if (account !== 'ALL') {
+          filtered = filtered.filter(e => (e.particular || '').toLowerCase() === account.toLowerCase());
+        }
+        if (search) {
+          filtered = filtered.filter(e => (e.particular || '').toLowerCase().includes(search));
+        }
+
+        filtered.forEach(e => {
+          totalIn += e.inc;
+          totalOut += e.exp;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${e.date}</td>
+            <td>${e.source}</td>
+            <td>${e.particular}</td>
+            <td class="num">${e.inc.toLocaleString()}</td>
+            <td class="num exp-num">${e.exp.toLocaleString()}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('reportFootLabel').colSpan = 3;
+        document.getElementById('reportFootLabel').innerText = "Total";
+        document.getElementById('ledgerFilterIn').style.display = "";
+        document.getElementById('ledgerFilterOut').style.display = "";
+        document.getElementById('ledgerFilterIn').innerText = totalIn.toLocaleString();
+        document.getElementById('ledgerFilterOut').innerText = totalOut.toLocaleString();
+        document.getElementById('ledgerFilterBalance').innerText = `Net: ₹${(totalIn - totalOut).toLocaleString()}`;
+
+      } else {
+        const grouping = {};
+
+        entries.forEach(e => {
+          let key = '';
+          const [yr, mo, dy] = e.date.split('-');
+          if (type === 'daywise') {
+            key = e.date;
+          } else if (type === 'monthwise') {
+            key = `${yr}-${mo}`;
+          } else if (type === 'yearwise') {
+            key = yr || 'Unknown';
+          }
+
+          if (!grouping[key]) {
+            grouping[key] = { inc: 0, exp: 0, count: 0 };
+          }
+          grouping[key].inc += e.inc;
+          grouping[key].exp += e.exp;
+          grouping[key].count += 1;
+        });
+
+        const labelTitle = type === 'daywise' ? 'Date (Day)' : type === 'monthwise' ? 'Year - Month' : 'Year';
+
+        thead.innerHTML = `
+          <tr>
+            <th style="width:34%;">${labelTitle}</th>
+            <th style="width:22%;" class="num">Total Income / In</th>
+            <th style="width:22%;" class="num exp-num">Total Exp / Out</th>
+            <th style="width:22%;" class="num">Net Balance</th>
+          </tr>
+        `;
+
+        const sortedKeys = Object.keys(grouping).sort().reverse();
+
+        sortedKeys.forEach(k => {
+          const item = grouping[k];
+          const net = item.inc - item.exp;
+          totalIn += item.inc;
+          totalOut += item.exp;
+
+          let displayKey = k;
+          if (type === 'monthwise' && k.includes('-')) {
+            const [y, m] = k.split('-');
+            const dateObj = new Date(parseInt(y), parseInt(m) - 1, 1);
+            displayKey = dateObj.toLocaleString('default', { month: 'short', year: 'numeric' });
+          }
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${displayKey}</strong> <span style="font-size:10px; color:#64748b;">(${item.count} items)</span></td>
+            <td class="num">${item.inc.toLocaleString()}</td>
+            <td class="num exp-num">${item.exp.toLocaleString()}</td>
+            <td class="num" style="font-weight:700; color:${net >= 0 ? '#10b981' : '#dc2626'};">${net >= 0 ? '+' : ''}${net.toLocaleString()}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('reportFootLabel').colSpan = 1;
+        document.getElementById('reportFootLabel').innerText = "Grand Total";
+        document.getElementById('ledgerFilterIn').style.display = "";
+        document.getElementById('ledgerFilterOut').style.display = "";
+        document.getElementById('ledgerFilterIn').innerText = totalIn.toLocaleString();
+        document.getElementById('ledgerFilterOut').innerText = totalOut.toLocaleString();
+        document.getElementById('ledgerFilterBalance').innerText = `₹${(totalIn - totalOut).toLocaleString()}`;
+      }
+    }
+
+    /* Final Accounts: Receipt & Payment, Trial Balance, P&L, Balance Sheet */
+    function renderFinalReport(type) {
+      const fmt = n => (Math.round(n * 100) / 100).toLocaleString();
+      const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      const addTo = (m, k, v) => { const key = (k || 'Unnamed').trim() || 'Unnamed'; m[key] = (m[key] || 0) + v; };
+      const cashInc = {}, cashExp = {}, recv = {}, payb = {};
+      sheets.forEach(sh => (sh.rows || []).forEach(r => {
+        const i = parseFloat(r.income) || 0, e = parseFloat(r.exp) || 0;
+        if (i) addTo(cashInc, r.particular, i);
+        if (e) addTo(cashExp, r.particular, e);
+      }));
+      receivables.forEach(r => { const a = parseFloat(r.amount) || 0; if (a) addTo(recv, r.name, a); });
+      payables.forEach(p => { const a = parseFloat(p.amount) || 0; if (a) addTo(payb, p.name, a); });
+      const sum = o => Object.values(o).reduce((a, b) => a + b, 0);
+      const tCashInc = sum(cashInc), tCashExp = sum(cashExp), tRecv = sum(recv), tPay = sum(payb);
+      const cash = tCashInc - tCashExp;
+      const income = tCashInc + tRecv, expense = tCashExp + tPay;
+      const profit = income - expense;
+      const rows = o => Object.keys(o).sort().map(k => [k, o[k]]);
+
+      // two-sided (T-format) table builder
+      const twoSide = (title, lh, rh, L, R) => {
+        const tl = L.reduce((a, x) => a + x[1], 0), tr = R.reduce((a, x) => a + x[1], 0);
+        const n = Math.max(L.length, R.length);
+        let h = `<h4 style="margin:6px 0; font-size:13px;">${title}</h4><div class="table-scroll"><table><thead><tr><th style="width:30%;">${lh}</th><th class="num" style="width:20%;">₹</th><th style="width:30%;">${rh}</th><th class="num" style="width:20%;">₹</th></tr></thead><tbody>`;
+        for (let i = 0; i < n; i++) {
+          const l = L[i], r = R[i];
+          h += `<tr><td>${l ? esc(l[0]) : ''}</td><td class="num">${l ? fmt(l[1]) : ''}</td><td>${r ? esc(r[0]) : ''}</td><td class="num">${r ? fmt(r[1]) : ''}</td></tr>`;
+        }
+        h += `</tbody><tfoot><tr class="total-row"><td>Total</td><td class="num">${fmt(tl)}</td><td>Total</td><td class="num">${fmt(tr)}</td></tr></tfoot></table></div>`;
+        return h;
+      };
+
+      let html = '';
+      if (type === 'receiptpayment') {
+        const L = [['To Opening Balance', 0], ...rows(cashInc).map(x => ['To ' + x[0], x[1]])];
+        const R = rows(cashExp).map(x => ['By ' + x[0], x[1]]);
+        R.push(['By Closing Balance (Cash in Hand)', cash]);
+        html = twoSide('Receipt &amp; Payment Account (all cashbook entries)', 'Receipts', 'Payments', L, R);
+      } else if (type === 'trialbalance') {
+        const acc = {};
+        const get = k => acc[k] || (acc[k] = { dr: 0, cr: 0 });
+        Object.entries(cashInc).forEach(([k, v]) => get(k).cr += v);
+        Object.entries(recv).forEach(([k, v]) => get(k).cr += v);
+        Object.entries(cashExp).forEach(([k, v]) => get(k).dr += v);
+        Object.entries(payb).forEach(([k, v]) => get(k).dr += v);
+        const list = Object.keys(acc).sort().map(k => [k, acc[k].dr, acc[k].cr]);
+        list.push(['Cash in Hand', cash > 0 ? cash : 0, cash < 0 ? -cash : 0]);
+        list.push(['Sundry Debtors (Receivables)', tRecv, 0]);
+        list.push(['Sundry Creditors (Payables)', 0, tPay]);
+        const td = list.reduce((a, x) => a + x[1], 0), tc = list.reduce((a, x) => a + x[2], 0);
+        html = `<h4 style="margin:6px 0; font-size:13px;">Trial Balance</h4><div class="table-scroll"><table><thead><tr><th style="width:50%;">Account</th><th class="num" style="width:25%;">Debit ₹</th><th class="num" style="width:25%;">Credit ₹</th></tr></thead><tbody>` +
+          list.map(x => `<tr><td>${esc(x[0])}</td><td class="num">${x[1] ? fmt(x[1]) : ''}</td><td class="num">${x[2] ? fmt(x[2]) : ''}</td></tr>`).join('') +
+          `</tbody><tfoot><tr class="total-row"><td>Total</td><td class="num">${fmt(td)}</td><td class="num">${fmt(tc)}</td></tr></tfoot></table></div>`;
+      } else if (type === 'profitloss') {
+        const eMap = {}, iMap = {};
+        Object.entries(cashExp).forEach(([k, v]) => addTo(eMap, k, v));
+        Object.entries(payb).forEach(([k, v]) => addTo(eMap, k, v));
+        Object.entries(cashInc).forEach(([k, v]) => addTo(iMap, k, v));
+        Object.entries(recv).forEach(([k, v]) => addTo(iMap, k, v));
+        const L = rows(eMap).map(x => ['To ' + x[0], x[1]]);
+        const R = rows(iMap).map(x => ['By ' + x[0], x[1]]);
+        if (profit >= 0) L.push(['To Net Profit', profit]); else R.push(['By Net Loss', -profit]);
+        html = twoSide('Profit &amp; Loss Account (incl. receivables / payables)', 'Expenses', 'Income', L, R);
+      } else {
+        const L = [], R = [];
+        if (profit >= 0) L.push(['Capital / Net Profit', profit]); else R.push(['Net Loss', -profit]);
+        if (tPay) L.push(['Sundry Creditors (Payables)', tPay]);
+        if (cash >= 0) R.push(['Cash in Hand', cash]); else L.push(['Cash Overdrawn', -cash]);
+        if (tRecv) R.push(['Sundry Debtors (Receivables)', tRecv]);
+        html = twoSide('Balance Sheet', 'Liabilities', 'Assets', L, R);
+      }
+      document.getElementById('finalReportBox').innerHTML = html;
+    }
+
+    /* Backup Export & Import */
+    function exportDataBackup() {
+      const backupData = {
+        sheets: sheets,
+        receivables: receivables,
+        payables: payables,
+        app_name: appTitle,
+        export_date: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `FinTrack_Backup_${today}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Backup exported successfully!", "success");
+    }
+
+    function importDataBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported.sheets) sheets = imported.sheets;
+          if (imported.receivables) receivables = imported.receivables;
+          if (imported.payables) payables = imported.payables;
+          saveAllData();
+          renderDashboard();
+          renderSheet();
+          renderDueTables();
+          showToast("Data restored successfully!", "success");
+        } catch(err) {
+          showToast("Invalid backup JSON file", "error");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /* Logout Action */
+    function promptSimpleLogout() {
+      document.getElementById('simpleLogoutModal').style.display = 'flex';
+    }
+
+    async function executeConfirmedLogout() {
+      try {
+        await fintrackSupabase.auth.signOut();
+        currentUser = null;
+        fintrackAuthUser = null;
+        localStorage.removeItem('cashbook_active_user');
+        closeModal('simpleLogoutModal');
+        showToast("Logged out successfully", "success");
+        checkAuthSession();
+      } catch(e) {
+        showToast("Logout failed", "error");
+      }
+    }
+
+    /* Navigation & Modal Keyboard Control */
+    function handleBackNavigation() {
+      const openModal = Array.from(document.querySelectorAll('.modal-overlay')).find(m => window.getComputedStyle(m).display === 'flex');
+      if (openModal) {
+        openModal.style.display = 'none';
+        return;
+      }
+
+      const curSection = navigationHistory[navigationHistory.length - 1] || 'dashboard';
+
+      if (curSection !== 'dashboard') {
+        navigationHistory.pop();
+        const prevSection = navigationHistory[navigationHistory.length - 1] || 'dashboard';
+        switchSection(prevSection, true);
+      }
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
+        e.preventDefault();
+        openQuickEntryModal('cashbook');
+        return;
+      }
+
+      if (e.key === 'Backspace') {
+        const active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+          return;
+        }
+        e.preventDefault();
+        handleBackNavigation();
+      }
+    });
+
+    window.addEventListener('popstate', function(e) {
+      e.preventDefault();
+      handleBackNavigation();
+    });
+
+    /* Modals Control */
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function openRenameModal() {
+      document.getElementById('modalPageNameInput').value = sheets[currentSheetIndex].name;
+      document.getElementById('pageModal').style.display = 'flex';
+    }
+    function copyAndAddNewSheet() {
+      isCreatingNew = true;
+      document.getElementById('modalHeading').innerText = 'New Page Name';
+      document.getElementById('modalPageNameInput').value = `Page ${sheets.length + 1}`;
+      document.getElementById('pageModal').style.display = 'flex';
+    }
+    function savePageModal() {
+      const val = document.getElementById('modalPageNameInput').value.trim() || `Page ${sheets.length + 1}`;
+      if (isCreatingNew) {
+        sheets.push({ name: val, rows: [] });
+        currentSheetIndex = sheets.length - 1;
+      } else {
+        sheets[currentSheetIndex].name = val;
+      }
+      isCreatingNew = false;
+      saveAllData();
+      renderSheet();
+      closeModal('pageModal');
+    }
+    function deleteCurrentSheet() {
+      if (confirm("Delete this page?")) {
+        sheets.splice(currentSheetIndex, 1);
+        currentSheetIndex = Math.max(0, sheets.length - 1);
+        saveAllData();
+        renderSheet();
+        closeModal('pageModal');
+      }
+    }
+    function openAppNameModal() {
+      document.getElementById('modalAppNameInput').value = appTitle;
+      document.getElementById('appNameModal').style.display = 'flex';
+    }
+    function saveAppName() {
+      appTitle = document.getElementById('modalAppNameInput').value.trim() || "FinTrack";
+      document.getElementById('appBrandTitle').innerText = appTitle;
+      localStorage.setItem('cashbook_app_name', appTitle);
+      saveAllData();
+      closeModal('appNameModal');
+      showToast("App title updated", "success");
+    }
+    function openChangePasswordModal() { document.getElementById('changePasswordModal').style.display = 'flex'; }
+    async function handleUpdatePassword() {
+      const pass = document.getElementById('newPasswordInput').value.trim();
+      if (pass.length < 6) return showToast("Password min 6 chars", "error");
+      const { error } = await fintrackSupabase.auth.updateUser({ password: pass });
+      if (error) showToast("Failed to update", "error");
+      else { showToast("Password updated", "success"); closeModal('changePasswordModal'); }
+    }
+    function openForgotModal() { document.getElementById('forgotModal').style.display = 'flex'; }
+    async function handleInstantPinPasswordReset() {
+      const u = document.getElementById('resetUsernameInput').value.trim().toLowerCase();
+      const pin = document.getElementById('resetPinInput').value.trim();
+      const p = document.getElementById('resetNewPassInput').value.trim();
+      if (!u || !pin || !p) return showToast("Fill all fields", "error");
+      const { data: ok, error: rpcErr } = await fintrackSupabase.rpc("reset_password_with_pin", { p_username: u, p_pin: pin, p_new_password: p });
+      if (rpcErr) return showToast(rpcErr.message, "error");
+      if (!ok) return showToast("Incorrect Recovery PIN", "error");
+      closeModal('forgotModal');
+      showToast("Password reset done! Please login", "success");
+    }
+
+    /* Auth Submit */
+    async function handleAuthSubmit() {
+      const u = document.getElementById('loginUsername').value.trim();
+      const p = document.getElementById('loginPassword').value.trim();
+      const pin = document.getElementById('userRecoveryPin').value.trim();
+      if (!u || !p) return showToast("Fill all credentials", "error");
+
+      try {
+        if (authMode === 'register') {
+          await fintrackRegister(u, p, pin);
+          showToast("Registered successfully!", "success");
+        } else {
+          await fintrackLogin(u, p);
+          showToast("Welcome back!", "success");
+        }
+        await checkAuthSession();
+      } catch(e) {
+        showToast(e.message || "Auth error", "error");
+      }
+    }
+    function toggleAuthModeView() {
+      authMode = authMode === 'login' ? 'register' : 'login';
+      document.getElementById('authTitle').innerText = 'FinTrack';
+      document.getElementById('authSubtitle').innerText = authMode === 'register' ? 'Create an Account' : 'Please Login';
+      document.getElementById('authSubmitBtn').innerText = authMode === 'register' ? 'Register' : 'Login';
+      document.getElementById('pinInputGroup').style.display = authMode === 'register' ? 'block' : 'none';
+      document.getElementById('authModeToggleLink').innerText = authMode === 'register' ? 'Have account? Login' : 'Register';
+    }
+
+    /* PWA Direct Installation */
+    let deferredInstallPrompt = null;
+
+    window.addEventListener("beforeinstallprompt", function(event) {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+    });
+
+    async function installFinTrack() {
+      if (!deferredInstallPrompt) {
+        showToast("Open browser menu & select 'Add to Home Screen'", "error");
+        return;
+      }
+      deferredInstallPrompt.prompt();
+      const result = await deferredInstallPrompt.userChoice;
+      if (result.outcome === 'accepted') {
+        showToast("App added to Home Screen!", "success");
+      }
+      deferredInstallPrompt = null;
+    }
+
+    window.addEventListener("appinstalled", function() {
+      showToast("App installed successfully!", "success");
+      deferredInstallPrompt = null;
+    });
+
+    checkAuthSession();
+  </script>
+</body>
+</html>
