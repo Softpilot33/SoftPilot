@@ -702,6 +702,58 @@
     }
     
   
+
+    /* ===== Auto-fit any screen size ===== */
+    html { -webkit-text-size-adjust: 100%; }
+    body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; }
+    img, svg, canvas, video { max-width: 100%; height: auto; }
+    .app-screen-section {
+      padding-left: max(10px, env(safe-area-inset-left, 0px));
+      padding-right: max(10px, env(safe-area-inset-right, 0px));
+    }
+    .table-scroll { max-height: 60vh; max-height: 60dvh; }
+    .modal-box { max-height: 92vh; max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #auth-screen-container { overflow-y: auto; }
+    .fintrack-card { margin: auto; }
+    .quick-range { display: flex; flex-wrap: wrap; gap: 6px; }
+    .quick-range button {
+      border: 1px solid #cbd5e1; background: #fff; color: #334155;
+      border-radius: 14px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;
+    }
+    .quick-range button:active { background: #eff6ff; border-color: #2563eb; color: #2563eb; }
+    .quick-range button.clear { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
+    #reportPeriodLabel { font-size: 11px; font-weight: 700; color: #2563eb; margin: 0 0 8px; }
+
+    @media (max-width: 600px) {
+      table { min-width: 440px; }
+      th, td { padding: 6px 5px; font-size: 11.5px; }
+      .filter-box { padding: 8px; gap: 6px; }
+      .filter-group { flex: 1 1 100%; }
+      .filter-group.date-col { flex: 1 1 45%; }
+      /* 16px stops iOS from zooming the page when a field is focused */
+      .modal-input-field, .fintrack-input-group input, .filter-box select, .filter-box input { font-size: 16px; }
+      .app-header { padding-left: 10px; padding-right: 10px; }
+      .app-header .brand { max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .user-avatar-pill span { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .modal-overlay { padding: 10px; }
+      .sheet-container { padding: 10px; }
+      .add-row-btn, .btn-toggle-bal { padding: 7px 10px; font-size: 11.5px; }
+    }
+    @media (max-width: 380px) {
+      th, td { font-size: 11px; }
+      .modal-box { padding: 14px; }
+      .fintrack-card { padding: 22px 14px; }
+      .bottom-nav-item { font-size: 9px; }
+      .hero-banner-card { padding: 14px; border-radius: 16px; }
+    }
+    @media (orientation: landscape) and (max-height: 500px) {
+      body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+      .modal-box { max-height: 96vh; max-height: 96dvh; }
+      .table-scroll { max-height: 70vh; max-height: 70dvh; }
+    }
+    @media (min-width: 1400px) {
+      .app-screen-section { max-width: 1400px; }
+    }
   </style>
 </head>
 <body>
@@ -726,7 +778,7 @@
       </div>
 
       <div class="fintrack-input-group" id="pinInputGroup" style="display: none;">
-        <input type="number" id="userRecoveryPin" inputmode="numeric" placeholder="4-Digit Recovery PIN">
+        <input type="tel" id="userRecoveryPin" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="4-Digit Recovery PIN">
       </div>
 
       <div class="fintrack-input-group" id="passwordInputGroup">
@@ -952,7 +1004,7 @@
                 <th style="width: 15%;">Income</th>
                 <th style="width: 15%;">Expense</th>
                 <th style="width: 16%;">Balance</th>
-                <th style="width: 5%;"></th>
+                <th style="width: 10%;"></th>
               </tr>
             </thead>
             <tbody id="sheetTableBody"></tbody>
@@ -1036,6 +1088,10 @@
             <option value="daywise">Day-wise Summary</option>
             <option value="monthwise">Month-wise Summary</option>
             <option value="yearwise">Year-wise Summary</option>
+            <option value="receiptpayment">Receipt &amp; Payment Account</option>
+            <option value="trialbalance">Trial Balance</option>
+            <option value="profitloss">Profit &amp; Loss Account</option>
+            <option value="balancesheet">Balance Sheet</option>
           </select>
         </div>
 
@@ -1050,7 +1106,30 @@
           <label>Search Keyword:</label>
           <input type="text" id="reportSearchInput" placeholder="Filter descriptions..." oninput="renderActiveReport()">
         </div>
+
+        <div class="filter-group date-col" id="dateFromGroup">
+          <label>From Date:</label>
+          <input type="date" id="reportFromDate" onchange="renderActiveReport()">
+        </div>
+        <div class="filter-group date-col" id="dateToGroup">
+          <label>To Date:</label>
+          <input type="date" id="reportToDate" onchange="renderActiveReport()">
+        </div>
+
+        <div class="filter-group" style="flex: 1 1 100%;">
+          <label>Quick Period:</label>
+          <div class="quick-range">
+            <button type="button" onclick="setReportRange('today')">Today</button>
+            <button type="button" onclick="setReportRange('week')">This Week</button>
+            <button type="button" onclick="setReportRange('month')">This Month</button>
+            <button type="button" onclick="setReportRange('lastmonth')">Last Month</button>
+            <button type="button" onclick="setReportRange('fy')">This FY</button>
+            <button type="button" onclick="setReportRange('year')">This Year</button>
+            <button type="button" class="clear" onclick="setReportRange('all')">Clear</button>
+          </div>
+        </div>
       </div>
+      <div id="reportPeriodLabel"></div>
 
       <div class="table-scroll">
         <table>
@@ -1066,6 +1145,7 @@
           </tfoot>
         </table>
       </div>
+      <div id="finalReportBox" style="display:none;"></div>
     </div>
 
     <!-- 4. SETTINGS HUB -->
@@ -1091,6 +1171,11 @@
 
         <div class="settings-item" onclick="openChangePasswordModal()">
           <span>🔒 Change Password</span>
+          <span style="color:#64748b;">Update →</span>
+        </div>
+
+        <div class="settings-item" onclick="openRecoveryPinModal()">
+          <span>🔑 Set / Change Recovery PIN</span>
           <span style="color:#64748b;">Update →</span>
         </div>
 
@@ -1167,7 +1252,7 @@
 
       <div class="modal-actions">
         <button class="modal-btn modal-cancel-btn" onclick="closeModal('quickEntryModal')">Cancel</button>
-        <button class="modal-btn modal-save-btn" onclick="submitQuickEntry()">Save Entry</button>
+        <button class="modal-btn modal-save-btn" id="qeSaveBtn" onclick="submitQuickEntry()">Save Entry</button>
       </div>
     </div>
   </div>
@@ -1215,10 +1300,26 @@
   <div class="modal-overlay" id="changePasswordModal">
     <div class="modal-box">
       <h4 style="color:#2563eb;">Change Password</h4>
-      <input type="password" id="newPasswordInput" class="modal-input-field" placeholder="New Password (min 6 chars)">
+      <input type="password" id="currentPasswordInput" class="modal-input-field" placeholder="Current Password" autocomplete="current-password">
+      <input type="password" id="newPasswordInput" class="modal-input-field" placeholder="New Password (min 6 chars)" autocomplete="new-password">
+      <input type="password" id="confirmPasswordInput" class="modal-input-field" placeholder="Confirm New Password" autocomplete="new-password">
       <div class="modal-actions">
         <button class="modal-btn modal-cancel-btn" onclick="closeModal('changePasswordModal')">Cancel</button>
-        <button class="modal-btn modal-save-btn" onclick="handleUpdatePassword()">Save</button>
+        <button class="modal-btn modal-save-btn" id="changePwdSaveBtn" onclick="handleUpdatePassword()">Update Password</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Set Recovery PIN Modal -->
+  <div class="modal-overlay" id="recoveryPinModal">
+    <div class="modal-box">
+      <h4 style="color:#2563eb;">Recovery PIN</h4>
+      <p style="font-size:11.5px; color:#64748b; margin-bottom:10px;">Set a 4-digit PIN. You need it if you forget your password.</p>
+      <input type="password" id="pinCurrentPasswordInput" class="modal-input-field" placeholder="Current Password" autocomplete="current-password">
+      <input type="tel" id="newRecoveryPinInput" inputmode="numeric" maxlength="4" autocomplete="off" class="modal-input-field" placeholder="New 4-Digit PIN">
+      <div class="modal-actions">
+        <button class="modal-btn modal-cancel-btn" onclick="closeModal('recoveryPinModal')">Cancel</button>
+        <button class="modal-btn modal-save-btn" id="pinSaveBtn" onclick="handleSetRecoveryPin()">Save PIN</button>
       </div>
     </div>
   </div>
@@ -1229,9 +1330,9 @@
       <h3>Reset Password</h3>
       <p style="font-size:11.5px; color:#64748b; margin-bottom:10px;">Enter your username, 4-Digit Recovery PIN, and new password.</p>
       <input type="text" id="resetUsernameInput" class="modal-input-field" placeholder="Username">
-      <input type="number" id="resetPinInput" inputmode="numeric" class="modal-input-field" placeholder="4-Digit Recovery PIN">
+      <input type="tel" id="resetPinInput" inputmode="numeric" maxlength="4" autocomplete="off" class="modal-input-field" placeholder="4-Digit Recovery PIN">
       <input type="password" id="resetNewPassInput" class="modal-input-field" placeholder="New Password">
-      <button class="fintrack-btn" onclick="handleInstantPinPasswordReset()">Reset Password</button>
+      <button class="fintrack-btn" id="resetPwdBtn" onclick="handleInstantPinPasswordReset()">Reset Password</button>
       <div style="margin-top:10px;"><a onclick="closeModal('forgotModal')" style="font-size:11.5px; color:#64748b; cursor:pointer;">Cancel</a></div>
     </div>
   </div>
@@ -1260,8 +1361,8 @@
     }
 
     /* Supabase Config */
-    const SUPABASE_URL = "https://dvacpinsknswatmbzeyi.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_RGW7QmP7tMGaLPlZ_hfrgg_IgWN7oRL";
+    const SUPABASE_URL = "https://xfdgjhgarjbtzhhqvdax.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_p0XRNWTalWnZ5mfCcDdqFw_dmM71tVr";
     const fintrackSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let fintrackAuthUser = null;
@@ -1277,7 +1378,10 @@
         options: { data: { username: cleanUser } }
       });
       if (error) throw error;
-      await fintrackSupabase.from("fintrack_recovery").upsert({ username: cleanUser, pin: String(pin).trim() });
+      if (String(pin).trim()) {
+        const { error: pinErr } = await fintrackSupabase.rpc("set_recovery_pin", { p_pin: String(pin).trim() });
+        if (pinErr) showToast("Recovery PIN not saved: " + pinErr.message, "error");
+      }
       fintrackAuthUser = data.user || null;
       return data;
     }
@@ -1305,7 +1409,8 @@
       };
       const { error } = await fintrackSupabase.from("fintrack_data").upsert(row, { onConflict: "user_id" });
       if (error) {
-        if (showNotify) showToast("Save failed", "error");
+        console.error("Supabase save error:", error);
+        showToast("Cloud save failed: " + (error.message || "unknown error"), "error");
         return false;
       }
       if (showNotify) showToast("Cloud Synced Successfully!", "success");
@@ -1335,7 +1440,7 @@
 
     /* App State */
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const currentMonthYear = now.toLocaleString('default', { month: 'short' }) + ' ' + String(now.getFullYear()).slice(-2);
 
     let isBalPanelVisible = false;
@@ -1470,9 +1575,25 @@
 
     /* Quick Entry Modal Controller */
     let currentEntryTarget = 'cashbook';
+    let editingRowIndex = null;
+
+    function openEditCashRow(i) {
+      const row = sheets[currentSheetIndex].rows[i];
+      if (!row) return;
+      openQuickEntryModal('cashbook');
+      editingRowIndex = i;
+      document.getElementById('quickEntryModalTitle').innerText = 'Update Cashbook Row';
+      document.getElementById('qeSaveBtn').innerText = 'Update';
+      document.getElementById('qeDate').value = row.date || today;
+      document.getElementById('qeParticular').value = row.particular || '';
+      document.getElementById('qeIncome').value = row.income || '';
+      document.getElementById('qeExp').value = row.exp || '';
+    }
 
     function openQuickEntryModal(target = 'cashbook') {
       currentEntryTarget = target;
+      editingRowIndex = null;
+      document.getElementById('qeSaveBtn').innerText = 'Save Entry';
       document.getElementById('qeDate').value = today;
       document.getElementById('qeParticular').value = '';
 
@@ -1523,13 +1644,19 @@
         }
 
         if (!sheets[currentSheetIndex].rows) sheets[currentSheetIndex].rows = [];
-        sheets[currentSheetIndex].rows.push({
-          date: dateVal,
-          particular: particularVal,
-          income: incVal,
-          exp: expVal
-        });
+        const newRow = { date: dateVal, particular: particularVal, income: incVal, exp: expVal };
 
+        if (editingRowIndex !== null && sheets[currentSheetIndex].rows[editingRowIndex]) {
+          // UPDATE existing row (keeps any extra fields like mode)
+          Object.assign(sheets[currentSheetIndex].rows[editingRowIndex], newRow);
+          editingRowIndex = null;
+          saveAllData();
+          renderSheet();
+          closeModal('quickEntryModal');
+          return showToast("Entry updated successfully!", "success");
+        }
+
+        sheets[currentSheetIndex].rows.push(newRow);
         saveAllData();
         renderSheet();
 
@@ -1715,7 +1842,7 @@
           <td><input type="number" inputmode="numeric" class="num" value="${row.income === 0 ? '' : row.income}" placeholder="0" oninput="sheets[currentSheetIndex].rows[${i}].income=parseFloat(this.value)||0;saveAllData();calculateCashTotals();"></td>
           <td><input type="number" inputmode="numeric" class="num exp-num" value="${row.exp === 0 ? '' : row.exp}" placeholder="0" oninput="sheets[currentSheetIndex].rows[${i}].exp=parseFloat(this.value)||0;saveAllData();calculateCashTotals();"></td>
           <td class="num" id="bal-cell-${i}">0</td>
-          <td><button class="action-btn" onclick="sheets[currentSheetIndex].rows.splice(${i},1);saveAllData();renderSheet();">✕</button></td>
+          <td style="white-space:nowrap;"><button class="action-btn" title="Edit" onclick="openEditCashRow(${i})">✎</button> <button class="action-btn" onclick="sheets[currentSheetIndex].rows.splice(${i},1);saveAllData();renderSheet();">✕</button></td>
         `;
         tbody.appendChild(tr);
       });
@@ -1858,6 +1985,49 @@
       });
     }
 
+    /* Report date filter helpers */
+    function getReportRange() {
+      return {
+        from: (document.getElementById('reportFromDate') || {}).value || '',
+        to: (document.getElementById('reportToDate') || {}).value || ''
+      };
+    }
+    // useFrom=false -> "as on To date" (cumulative), used by Trial Balance / Balance Sheet
+    function inReportRange(d, useFrom = true) {
+      const { from, to } = getReportRange();
+      if (!from && !to) return true;
+      if (!d) return false;
+      if (useFrom && from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    }
+    function setReportRange(preset) {
+      const pad = n => String(n).padStart(2, '0');
+      const f = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const t = new Date();
+      let from = '', to = '';
+      if (preset === 'today') { from = to = f(t); }
+      else if (preset === 'week') { const s = new Date(t); s.setDate(t.getDate() - ((t.getDay() + 6) % 7)); from = f(s); to = f(t); }
+      else if (preset === 'month') { from = f(new Date(t.getFullYear(), t.getMonth(), 1)); to = f(new Date(t.getFullYear(), t.getMonth() + 1, 0)); }
+      else if (preset === 'lastmonth') { from = f(new Date(t.getFullYear(), t.getMonth() - 1, 1)); to = f(new Date(t.getFullYear(), t.getMonth(), 0)); }
+      else if (preset === 'fy') { const y = t.getMonth() >= 3 ? t.getFullYear() : t.getFullYear() - 1; from = `${y}-04-01`; to = `${y + 1}-03-31`; }
+      else if (preset === 'year') { from = `${t.getFullYear()}-01-01`; to = `${t.getFullYear()}-12-31`; }
+      document.getElementById('reportFromDate').value = from;
+      document.getElementById('reportToDate').value = to;
+      renderActiveReport();
+    }
+    function updatePeriodLabel(type) {
+      const el = document.getElementById('reportPeriodLabel');
+      if (!el) return;
+      const { from, to } = getReportRange();
+      const dmy = d => d ? d.split('-').reverse().join('-') : '';
+      if (!from && !to) { el.innerText = 'Showing: All dates'; return; }
+      const asOn = ['trialbalance', 'balancesheet'].includes(type);
+      el.innerText = asOn
+        ? `As on ${to ? dmy(to) : 'latest'} (all entries up to this date)`
+        : `Period: ${from ? dmy(from) : 'start'} to ${to ? dmy(to) : 'latest'}`;
+    }
+
     function handleReportTypeChange() {
       const type = document.getElementById('reportTypeSelect').value;
       document.getElementById('accountFilterGroup').style.display = type === 'ledger' ? 'flex' : 'none';
@@ -1867,6 +2037,11 @@
 
     function renderActiveReport() {
       const type = document.getElementById('reportTypeSelect').value;
+      const isFinal = ['receiptpayment','trialbalance','profitloss','balancesheet'].includes(type);
+      updatePeriodLabel(type);
+      document.querySelector('#ledger-section .table-scroll').style.display = isFinal ? 'none' : '';
+      document.getElementById('finalReportBox').style.display = isFinal ? 'block' : 'none';
+      if (isFinal) { renderFinalReport(type); return; }
       const account = document.getElementById('ledgerAccountSelect').value;
       const search = document.getElementById('reportSearchInput').value.toLowerCase();
       const thead = document.getElementById('reportTableHead');
@@ -1875,7 +2050,7 @@
 
       const entries = [];
       sheets.forEach(s => (s.rows || []).forEach(r => {
-        if (r.date) {
+        if (r.date && inReportRange(r.date)) {
           entries.push({
             date: r.date,
             source: `Cashbook (${s.name})`,
@@ -1886,7 +2061,7 @@
         }
       }));
       receivables.forEach(r => {
-        if (r.date) {
+        if (r.date && inReportRange(r.date)) {
           entries.push({
             date: r.date,
             source: 'Receipt (Due In)',
@@ -1897,7 +2072,7 @@
         }
       });
       payables.forEach(p => {
-        if (p.date) {
+        if (p.date && inReportRange(p.date)) {
           entries.push({
             date: p.date,
             source: 'Payment (Due Out)',
@@ -2017,6 +2192,90 @@
         document.getElementById('ledgerFilterOut').innerText = totalOut.toLocaleString();
         document.getElementById('ledgerFilterBalance').innerText = `₹${(totalIn - totalOut).toLocaleString()}`;
       }
+    }
+
+    /* Final Accounts: Receipt & Payment, Trial Balance, P&L, Balance Sheet */
+    function renderFinalReport(type) {
+      const fmt = n => (Math.round(n * 100) / 100).toLocaleString();
+      const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      const addTo = (m, k, v) => { const key = (k || 'Unnamed').trim() || 'Unnamed'; m[key] = (m[key] || 0) + v; };
+      const cashInc = {}, cashExp = {}, recv = {}, payb = {};
+      // Trial Balance & Balance Sheet = "as on To date"; others = From-To period
+      const asOn = (type === 'trialbalance' || type === 'balancesheet');
+      const inPeriod = d => inReportRange(d, !asOn);
+      const { from: fromDate } = getReportRange();
+      let openBal = 0; // cash balance brought forward before From date (Receipt & Payment)
+      sheets.forEach(sh => (sh.rows || []).forEach(r => {
+        const i = parseFloat(r.income) || 0, e = parseFloat(r.exp) || 0;
+        if (!inPeriod(r.date)) {
+          if (type === 'receiptpayment' && fromDate && r.date && r.date < fromDate) openBal += i - e;
+          return;
+        }
+        if (i) addTo(cashInc, r.particular, i);
+        if (e) addTo(cashExp, r.particular, e);
+      }));
+      receivables.forEach(r => { if (!inPeriod(r.date)) return; const a = parseFloat(r.amount) || 0; if (a) addTo(recv, r.name, a); });
+      payables.forEach(p => { if (!inPeriod(p.date)) return; const a = parseFloat(p.amount) || 0; if (a) addTo(payb, p.name, a); });
+      const sum = o => Object.values(o).reduce((a, b) => a + b, 0);
+      const tCashInc = sum(cashInc), tCashExp = sum(cashExp), tRecv = sum(recv), tPay = sum(payb);
+      const cash = tCashInc - tCashExp;
+      const income = tCashInc + tRecv, expense = tCashExp + tPay;
+      const profit = income - expense;
+      const rows = o => Object.keys(o).sort().map(k => [k, o[k]]);
+
+      // two-sided (T-format) table builder
+      const twoSide = (title, lh, rh, L, R) => {
+        const tl = L.reduce((a, x) => a + x[1], 0), tr = R.reduce((a, x) => a + x[1], 0);
+        const n = Math.max(L.length, R.length);
+        let h = `<h4 style="margin:6px 0; font-size:13px;">${title}</h4><div class="table-scroll"><table><thead><tr><th style="width:30%;">${lh}</th><th class="num" style="width:20%;">₹</th><th style="width:30%;">${rh}</th><th class="num" style="width:20%;">₹</th></tr></thead><tbody>`;
+        for (let i = 0; i < n; i++) {
+          const l = L[i], r = R[i];
+          h += `<tr><td>${l ? esc(l[0]) : ''}</td><td class="num">${l ? fmt(l[1]) : ''}</td><td>${r ? esc(r[0]) : ''}</td><td class="num">${r ? fmt(r[1]) : ''}</td></tr>`;
+        }
+        h += `</tbody><tfoot><tr class="total-row"><td>Total</td><td class="num">${fmt(tl)}</td><td>Total</td><td class="num">${fmt(tr)}</td></tr></tfoot></table></div>`;
+        return h;
+      };
+
+      let html = '';
+      if (type === 'receiptpayment') {
+        const L = [['To Opening Balance', openBal], ...rows(cashInc).map(x => ['To ' + x[0], x[1]])];
+        const R = rows(cashExp).map(x => ['By ' + x[0], x[1]]);
+        R.push(['By Closing Balance (Cash in Hand)', cash + openBal]);
+        html = twoSide('Receipt &amp; Payment Account (all cashbook entries)', 'Receipts', 'Payments', L, R);
+      } else if (type === 'trialbalance') {
+        const acc = {};
+        const get = k => acc[k] || (acc[k] = { dr: 0, cr: 0 });
+        Object.entries(cashInc).forEach(([k, v]) => get(k).cr += v);
+        Object.entries(recv).forEach(([k, v]) => get(k).cr += v);
+        Object.entries(cashExp).forEach(([k, v]) => get(k).dr += v);
+        Object.entries(payb).forEach(([k, v]) => get(k).dr += v);
+        const list = Object.keys(acc).sort().map(k => [k, acc[k].dr, acc[k].cr]);
+        list.push(['Cash in Hand', cash > 0 ? cash : 0, cash < 0 ? -cash : 0]);
+        list.push(['Sundry Debtors (Receivables)', tRecv, 0]);
+        list.push(['Sundry Creditors (Payables)', 0, tPay]);
+        const td = list.reduce((a, x) => a + x[1], 0), tc = list.reduce((a, x) => a + x[2], 0);
+        html = `<h4 style="margin:6px 0; font-size:13px;">Trial Balance</h4><div class="table-scroll"><table><thead><tr><th style="width:50%;">Account</th><th class="num" style="width:25%;">Debit ₹</th><th class="num" style="width:25%;">Credit ₹</th></tr></thead><tbody>` +
+          list.map(x => `<tr><td>${esc(x[0])}</td><td class="num">${x[1] ? fmt(x[1]) : ''}</td><td class="num">${x[2] ? fmt(x[2]) : ''}</td></tr>`).join('') +
+          `</tbody><tfoot><tr class="total-row"><td>Total</td><td class="num">${fmt(td)}</td><td class="num">${fmt(tc)}</td></tr></tfoot></table></div>`;
+      } else if (type === 'profitloss') {
+        const eMap = {}, iMap = {};
+        Object.entries(cashExp).forEach(([k, v]) => addTo(eMap, k, v));
+        Object.entries(payb).forEach(([k, v]) => addTo(eMap, k, v));
+        Object.entries(cashInc).forEach(([k, v]) => addTo(iMap, k, v));
+        Object.entries(recv).forEach(([k, v]) => addTo(iMap, k, v));
+        const L = rows(eMap).map(x => ['To ' + x[0], x[1]]);
+        const R = rows(iMap).map(x => ['By ' + x[0], x[1]]);
+        if (profit >= 0) L.push(['To Net Profit', profit]); else R.push(['By Net Loss', -profit]);
+        html = twoSide('Profit &amp; Loss Account (incl. receivables / payables)', 'Expenses', 'Income', L, R);
+      } else {
+        const L = [], R = [];
+        if (profit >= 0) L.push(['Capital / Net Profit', profit]); else R.push(['Net Loss', -profit]);
+        if (tPay) L.push(['Sundry Creditors (Payables)', tPay]);
+        if (cash >= 0) R.push(['Cash in Hand', cash]); else L.push(['Cash Overdrawn', -cash]);
+        if (tRecv) R.push(['Sundry Debtors (Receivables)', tRecv]);
+        html = twoSide('Balance Sheet', 'Liabilities', 'Assets', L, R);
+      }
+      document.getElementById('finalReportBox').innerHTML = html;
     }
 
     /* Backup Export & Import */
@@ -2164,24 +2423,114 @@
       closeModal('appNameModal');
       showToast("App title updated", "success");
     }
-    function openChangePasswordModal() { document.getElementById('changePasswordModal').style.display = 'flex'; }
+    /* Re-verify the logged-in user's current password (also refreshes the session) */
+    async function reauthCurrentUser(currentPass) {
+      const { data: sess } = await fintrackSupabase.auth.getSession();
+      const email = (sess && sess.session && sess.session.user && sess.session.user.email)
+        || (fintrackAuthUser && fintrackAuthUser.email);
+      if (!email) { showToast("Session expired, please login again", "error"); return false; }
+      const { data, error } = await fintrackSupabase.auth.signInWithPassword({ email, password: currentPass });
+      if (error) { showToast("Current password is wrong", "error"); return false; }
+      if (data && data.user) fintrackAuthUser = data.user;
+      return true;
+    }
+
+    function openChangePasswordModal() {
+      ['currentPasswordInput', 'newPasswordInput', 'confirmPasswordInput'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('changePasswordModal').style.display = 'flex';
+    }
     async function handleUpdatePassword() {
+      const cur = document.getElementById('currentPasswordInput').value.trim();
       const pass = document.getElementById('newPasswordInput').value.trim();
-      if (pass.length < 6) return showToast("Password min 6 chars", "error");
-      const { error } = await fintrackSupabase.auth.updateUser({ password: pass });
-      if (error) showToast("Failed to update", "error");
-      else { showToast("Password updated", "success"); closeModal('changePasswordModal'); }
+      const conf = document.getElementById('confirmPasswordInput').value.trim();
+      if (!cur) return showToast("Enter current password", "error");
+      if (pass.length < 6) return showToast("New password min 6 chars", "error");
+      if (pass !== conf) return showToast("New passwords do not match", "error");
+      if (pass === cur) return showToast("New password must be different from current", "error");
+
+      const btn = document.getElementById('changePwdSaveBtn');
+      btn.disabled = true; btn.innerText = 'Updating...';
+      try {
+        if (!(await reauthCurrentUser(cur))) return;
+        const { error } = await fintrackSupabase.auth.updateUser({ password: pass });
+        if (error) {
+          console.error("Change password error:", error);
+          const m = String(error.message || '');
+          if (/session/i.test(m)) return showToast("Session expired, please login again", "error");
+          if (/different|same/i.test(m)) return showToast("New password must be different from current", "error");
+          return showToast("Failed: " + m, "error");
+        }
+        closeModal('changePasswordModal');
+        showToast("Password updated successfully", "success");
+      } catch (e) {
+        console.error(e);
+        showToast("Network error, try again", "error");
+      } finally {
+        btn.disabled = false; btn.innerText = 'Update Password';
+      }
     }
     function openForgotModal() { document.getElementById('forgotModal').style.display = 'flex'; }
     async function handleInstantPinPasswordReset() {
       const u = document.getElementById('resetUsernameInput').value.trim().toLowerCase();
       const pin = document.getElementById('resetPinInput').value.trim();
       const p = document.getElementById('resetNewPassInput').value.trim();
-      const { data } = await fintrackSupabase.from("fintrack_recovery").select("pin").eq("username", u).maybeSingle();
-      if (!data || data.pin !== pin) return showToast("Incorrect Recovery PIN", "error");
-      await fintrackSupabase.auth.updateUser({ password: p });
-      closeModal('forgotModal');
-      showToast("Password reset done! Please login", "success");
+      if (!u || !pin || !p) return showToast("Fill all fields", "error");
+      if (!/^\d{4}$/.test(pin)) return showToast("Recovery PIN must be exactly 4 digits", "error");
+      if (p.length < 6) return showToast("Password min 6 chars", "error");
+
+      const btn = document.getElementById('resetPwdBtn');
+      btn.disabled = true; btn.innerText = 'Resetting...';
+      try {
+        const { data: ok, error: rpcErr } = await fintrackSupabase.rpc("reset_password_with_pin", {
+          p_username: u, p_pin: pin, p_new_password: p
+        });
+        if (rpcErr) {
+          console.error("Reset error:", rpcErr);
+          return showToast("Reset failed: " + rpcErr.message, "error");
+        }
+        if (!ok) return showToast("Wrong username / PIN, no PIN set for this user, or locked after 5 wrong tries", "error");
+        closeModal('forgotModal');
+        document.getElementById('loginUsername').value = u;
+        document.getElementById('loginPassword').value = '';
+        ['resetUsernameInput', 'resetPinInput', 'resetNewPassInput'].forEach(id => document.getElementById(id).value = '');
+        showToast("Password reset done! Please login", "success");
+      } catch (e) {
+        console.error(e);
+        showToast("Network error, try again", "error");
+      } finally {
+        btn.disabled = false; btn.innerText = 'Reset Password';
+      }
+    }
+
+    /* Set / change Recovery PIN (for logged-in users) */
+    function openRecoveryPinModal() {
+      document.getElementById('pinCurrentPasswordInput').value = '';
+      document.getElementById('newRecoveryPinInput').value = '';
+      document.getElementById('recoveryPinModal').style.display = 'flex';
+    }
+    async function handleSetRecoveryPin() {
+      const cur = document.getElementById('pinCurrentPasswordInput').value.trim();
+      const pin = document.getElementById('newRecoveryPinInput').value.trim();
+      if (!cur) return showToast("Enter current password", "error");
+      if (!/^\d{4}$/.test(pin)) return showToast("Recovery PIN must be exactly 4 digits", "error");
+
+      const btn = document.getElementById('pinSaveBtn');
+      btn.disabled = true; btn.innerText = 'Saving...';
+      try {
+        if (!(await reauthCurrentUser(cur))) return;
+        const { error } = await fintrackSupabase.rpc("set_recovery_pin", { p_pin: pin });
+        if (error) {
+          console.error("Set PIN error:", error);
+          return showToast("PIN not saved: " + error.message, "error");
+        }
+        closeModal('recoveryPinModal');
+        showToast("Recovery PIN saved", "success");
+      } catch (e) {
+        console.error(e);
+        showToast("Network error, try again", "error");
+      } finally {
+        btn.disabled = false; btn.innerText = 'Save PIN';
+      }
     }
 
     /* Auth Submit */
@@ -2190,6 +2539,7 @@
       const p = document.getElementById('loginPassword').value.trim();
       const pin = document.getElementById('userRecoveryPin').value.trim();
       if (!u || !p) return showToast("Fill all credentials", "error");
+      if (authMode === 'register' && !/^\d{4}$/.test(pin)) return showToast("Enter a 4-digit Recovery PIN (needed for password reset)", "error");
 
       try {
         if (authMode === 'register') {
