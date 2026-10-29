@@ -702,6 +702,58 @@
     }
     
   
+
+    /* ===== Auto-fit any screen size ===== */
+    html { -webkit-text-size-adjust: 100%; }
+    body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; }
+    img, svg, canvas, video { max-width: 100%; height: auto; }
+    .app-screen-section {
+      padding-left: max(10px, env(safe-area-inset-left, 0px));
+      padding-right: max(10px, env(safe-area-inset-right, 0px));
+    }
+    .table-scroll { max-height: 60vh; max-height: 60dvh; }
+    .modal-box { max-height: 92vh; max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #auth-screen-container { overflow-y: auto; }
+    .fintrack-card { margin: auto; }
+    .quick-range { display: flex; flex-wrap: wrap; gap: 6px; }
+    .quick-range button {
+      border: 1px solid #cbd5e1; background: #fff; color: #334155;
+      border-radius: 14px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;
+    }
+    .quick-range button:active { background: #eff6ff; border-color: #2563eb; color: #2563eb; }
+    .quick-range button.clear { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
+    #reportPeriodLabel { font-size: 11px; font-weight: 700; color: #2563eb; margin: 0 0 8px; }
+
+    @media (max-width: 600px) {
+      table { min-width: 440px; }
+      th, td { padding: 6px 5px; font-size: 11.5px; }
+      .filter-box { padding: 8px; gap: 6px; }
+      .filter-group { flex: 1 1 100%; }
+      .filter-group.date-col { flex: 1 1 45%; }
+      /* 16px stops iOS from zooming the page when a field is focused */
+      .modal-input-field, .fintrack-input-group input, .filter-box select, .filter-box input { font-size: 16px; }
+      .app-header { padding-left: 10px; padding-right: 10px; }
+      .app-header .brand { max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .user-avatar-pill span { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .modal-overlay { padding: 10px; }
+      .sheet-container { padding: 10px; }
+      .add-row-btn, .btn-toggle-bal { padding: 7px 10px; font-size: 11.5px; }
+    }
+    @media (max-width: 380px) {
+      th, td { font-size: 11px; }
+      .modal-box { padding: 14px; }
+      .fintrack-card { padding: 22px 14px; }
+      .bottom-nav-item { font-size: 9px; }
+      .hero-banner-card { padding: 14px; border-radius: 16px; }
+    }
+    @media (orientation: landscape) and (max-height: 500px) {
+      body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+      .modal-box { max-height: 96vh; max-height: 96dvh; }
+      .table-scroll { max-height: 70vh; max-height: 70dvh; }
+    }
+    @media (min-width: 1400px) {
+      .app-screen-section { max-width: 1400px; }
+    }
   </style>
 </head>
 <body>
@@ -726,7 +778,7 @@
       </div>
 
       <div class="fintrack-input-group" id="pinInputGroup" style="display: none;">
-        <input type="number" id="userRecoveryPin" inputmode="numeric" placeholder="4-Digit Recovery PIN">
+        <input type="tel" id="userRecoveryPin" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="4-Digit Recovery PIN">
       </div>
 
       <div class="fintrack-input-group" id="passwordInputGroup">
@@ -1054,7 +1106,30 @@
           <label>Search Keyword:</label>
           <input type="text" id="reportSearchInput" placeholder="Filter descriptions..." oninput="renderActiveReport()">
         </div>
+
+        <div class="filter-group date-col" id="dateFromGroup">
+          <label>From Date:</label>
+          <input type="date" id="reportFromDate" onchange="renderActiveReport()">
+        </div>
+        <div class="filter-group date-col" id="dateToGroup">
+          <label>To Date:</label>
+          <input type="date" id="reportToDate" onchange="renderActiveReport()">
+        </div>
+
+        <div class="filter-group" style="flex: 1 1 100%;">
+          <label>Quick Period:</label>
+          <div class="quick-range">
+            <button type="button" onclick="setReportRange('today')">Today</button>
+            <button type="button" onclick="setReportRange('week')">This Week</button>
+            <button type="button" onclick="setReportRange('month')">This Month</button>
+            <button type="button" onclick="setReportRange('lastmonth')">Last Month</button>
+            <button type="button" onclick="setReportRange('fy')">This FY</button>
+            <button type="button" onclick="setReportRange('year')">This Year</button>
+            <button type="button" class="clear" onclick="setReportRange('all')">Clear</button>
+          </div>
+        </div>
       </div>
+      <div id="reportPeriodLabel"></div>
 
       <div class="table-scroll">
         <table>
@@ -1096,6 +1171,11 @@
 
         <div class="settings-item" onclick="openChangePasswordModal()">
           <span>🔒 Change Password</span>
+          <span style="color:#64748b;">Update →</span>
+        </div>
+
+        <div class="settings-item" onclick="openRecoveryPinModal()">
+          <span>🔑 Set / Change Recovery PIN</span>
           <span style="color:#64748b;">Update →</span>
         </div>
 
@@ -1228,15 +1308,28 @@
     </div>
   </div>
 
+  <!-- Set Recovery PIN Modal -->
+  <div class="modal-overlay" id="recoveryPinModal">
+    <div class="modal-box">
+      <h3>Recovery PIN</h3>
+      <p style="font-size:11.5px; color:#64748b; margin-bottom:10px;">Set a 4-digit PIN. You need it if you forget your password.</p>
+      <input type="tel" id="newRecoveryPinInput" inputmode="numeric" maxlength="4" autocomplete="off" class="modal-input-field" placeholder="New 4-Digit PIN">
+      <div class="modal-actions">
+        <button class="modal-btn modal-cancel-btn" onclick="closeModal('recoveryPinModal')">Cancel</button>
+        <button class="modal-btn modal-save-btn" onclick="handleSetRecoveryPin()">Save PIN</button>
+      </div>
+    </div>
+  </div>
+
   <!-- PIN Reset Modal -->
   <div class="modal-overlay" id="forgotModal">
     <div class="modal-box">
       <h3>Reset Password</h3>
       <p style="font-size:11.5px; color:#64748b; margin-bottom:10px;">Enter your username, 4-Digit Recovery PIN, and new password.</p>
       <input type="text" id="resetUsernameInput" class="modal-input-field" placeholder="Username">
-      <input type="number" id="resetPinInput" inputmode="numeric" class="modal-input-field" placeholder="4-Digit Recovery PIN">
+      <input type="tel" id="resetPinInput" inputmode="numeric" maxlength="4" autocomplete="off" class="modal-input-field" placeholder="4-Digit Recovery PIN">
       <input type="password" id="resetNewPassInput" class="modal-input-field" placeholder="New Password">
-      <button class="fintrack-btn" onclick="handleInstantPinPasswordReset()">Reset Password</button>
+      <button class="fintrack-btn" id="resetPwdBtn" onclick="handleInstantPinPasswordReset()">Reset Password</button>
       <div style="margin-top:10px;"><a onclick="closeModal('forgotModal')" style="font-size:11.5px; color:#64748b; cursor:pointer;">Cancel</a></div>
     </div>
   </div>
@@ -1344,7 +1437,7 @@
 
     /* App State */
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const currentMonthYear = now.toLocaleString('default', { month: 'short' }) + ' ' + String(now.getFullYear()).slice(-2);
 
     let isBalPanelVisible = false;
@@ -1889,6 +1982,49 @@
       });
     }
 
+    /* Report date filter helpers */
+    function getReportRange() {
+      return {
+        from: (document.getElementById('reportFromDate') || {}).value || '',
+        to: (document.getElementById('reportToDate') || {}).value || ''
+      };
+    }
+    // useFrom=false -> "as on To date" (cumulative), used by Trial Balance / Balance Sheet
+    function inReportRange(d, useFrom = true) {
+      const { from, to } = getReportRange();
+      if (!from && !to) return true;
+      if (!d) return false;
+      if (useFrom && from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    }
+    function setReportRange(preset) {
+      const pad = n => String(n).padStart(2, '0');
+      const f = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const t = new Date();
+      let from = '', to = '';
+      if (preset === 'today') { from = to = f(t); }
+      else if (preset === 'week') { const s = new Date(t); s.setDate(t.getDate() - ((t.getDay() + 6) % 7)); from = f(s); to = f(t); }
+      else if (preset === 'month') { from = f(new Date(t.getFullYear(), t.getMonth(), 1)); to = f(new Date(t.getFullYear(), t.getMonth() + 1, 0)); }
+      else if (preset === 'lastmonth') { from = f(new Date(t.getFullYear(), t.getMonth() - 1, 1)); to = f(new Date(t.getFullYear(), t.getMonth(), 0)); }
+      else if (preset === 'fy') { const y = t.getMonth() >= 3 ? t.getFullYear() : t.getFullYear() - 1; from = `${y}-04-01`; to = `${y + 1}-03-31`; }
+      else if (preset === 'year') { from = `${t.getFullYear()}-01-01`; to = `${t.getFullYear()}-12-31`; }
+      document.getElementById('reportFromDate').value = from;
+      document.getElementById('reportToDate').value = to;
+      renderActiveReport();
+    }
+    function updatePeriodLabel(type) {
+      const el = document.getElementById('reportPeriodLabel');
+      if (!el) return;
+      const { from, to } = getReportRange();
+      const dmy = d => d ? d.split('-').reverse().join('-') : '';
+      if (!from && !to) { el.innerText = 'Showing: All dates'; return; }
+      const asOn = ['trialbalance', 'balancesheet'].includes(type);
+      el.innerText = asOn
+        ? `As on ${to ? dmy(to) : 'latest'} (all entries up to this date)`
+        : `Period: ${from ? dmy(from) : 'start'} to ${to ? dmy(to) : 'latest'}`;
+    }
+
     function handleReportTypeChange() {
       const type = document.getElementById('reportTypeSelect').value;
       document.getElementById('accountFilterGroup').style.display = type === 'ledger' ? 'flex' : 'none';
@@ -1899,6 +2035,7 @@
     function renderActiveReport() {
       const type = document.getElementById('reportTypeSelect').value;
       const isFinal = ['receiptpayment','trialbalance','profitloss','balancesheet'].includes(type);
+      updatePeriodLabel(type);
       document.querySelector('#ledger-section .table-scroll').style.display = isFinal ? 'none' : '';
       document.getElementById('finalReportBox').style.display = isFinal ? 'block' : 'none';
       if (isFinal) { renderFinalReport(type); return; }
@@ -1910,7 +2047,7 @@
 
       const entries = [];
       sheets.forEach(s => (s.rows || []).forEach(r => {
-        if (r.date) {
+        if (r.date && inReportRange(r.date)) {
           entries.push({
             date: r.date,
             source: `Cashbook (${s.name})`,
@@ -1921,7 +2058,7 @@
         }
       }));
       receivables.forEach(r => {
-        if (r.date) {
+        if (r.date && inReportRange(r.date)) {
           entries.push({
             date: r.date,
             source: 'Receipt (Due In)',
@@ -1932,7 +2069,7 @@
         }
       });
       payables.forEach(p => {
-        if (p.date) {
+        if (p.date && inReportRange(p.date)) {
           entries.push({
             date: p.date,
             source: 'Payment (Due Out)',
@@ -2060,13 +2197,22 @@
       const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
       const addTo = (m, k, v) => { const key = (k || 'Unnamed').trim() || 'Unnamed'; m[key] = (m[key] || 0) + v; };
       const cashInc = {}, cashExp = {}, recv = {}, payb = {};
+      // Trial Balance & Balance Sheet = "as on To date"; others = From-To period
+      const asOn = (type === 'trialbalance' || type === 'balancesheet');
+      const inPeriod = d => inReportRange(d, !asOn);
+      const { from: fromDate } = getReportRange();
+      let openBal = 0; // cash balance brought forward before From date (Receipt & Payment)
       sheets.forEach(sh => (sh.rows || []).forEach(r => {
         const i = parseFloat(r.income) || 0, e = parseFloat(r.exp) || 0;
+        if (!inPeriod(r.date)) {
+          if (type === 'receiptpayment' && fromDate && r.date && r.date < fromDate) openBal += i - e;
+          return;
+        }
         if (i) addTo(cashInc, r.particular, i);
         if (e) addTo(cashExp, r.particular, e);
       }));
-      receivables.forEach(r => { const a = parseFloat(r.amount) || 0; if (a) addTo(recv, r.name, a); });
-      payables.forEach(p => { const a = parseFloat(p.amount) || 0; if (a) addTo(payb, p.name, a); });
+      receivables.forEach(r => { if (!inPeriod(r.date)) return; const a = parseFloat(r.amount) || 0; if (a) addTo(recv, r.name, a); });
+      payables.forEach(p => { if (!inPeriod(p.date)) return; const a = parseFloat(p.amount) || 0; if (a) addTo(payb, p.name, a); });
       const sum = o => Object.values(o).reduce((a, b) => a + b, 0);
       const tCashInc = sum(cashInc), tCashExp = sum(cashExp), tRecv = sum(recv), tPay = sum(payb);
       const cash = tCashInc - tCashExp;
@@ -2089,9 +2235,9 @@
 
       let html = '';
       if (type === 'receiptpayment') {
-        const L = [['To Opening Balance', 0], ...rows(cashInc).map(x => ['To ' + x[0], x[1]])];
+        const L = [['To Opening Balance', openBal], ...rows(cashInc).map(x => ['To ' + x[0], x[1]])];
         const R = rows(cashExp).map(x => ['By ' + x[0], x[1]]);
-        R.push(['By Closing Balance (Cash in Hand)', cash]);
+        R.push(['By Closing Balance (Cash in Hand)', cash + openBal]);
         html = twoSide('Receipt &amp; Payment Account (all cashbook entries)', 'Receipts', 'Payments', L, R);
       } else if (type === 'trialbalance') {
         const acc = {};
@@ -2288,11 +2434,45 @@
       const pin = document.getElementById('resetPinInput').value.trim();
       const p = document.getElementById('resetNewPassInput').value.trim();
       if (!u || !pin || !p) return showToast("Fill all fields", "error");
-      const { data: ok, error: rpcErr } = await fintrackSupabase.rpc("reset_password_with_pin", { p_username: u, p_pin: pin, p_new_password: p });
-      if (rpcErr) return showToast(rpcErr.message, "error");
-      if (!ok) return showToast("Incorrect Recovery PIN", "error");
-      closeModal('forgotModal');
-      showToast("Password reset done! Please login", "success");
+      if (!/^\d{4}$/.test(pin)) return showToast("Recovery PIN must be exactly 4 digits", "error");
+      if (p.length < 6) return showToast("Password min 6 chars", "error");
+
+      const btn = document.getElementById('resetPwdBtn');
+      btn.disabled = true; btn.innerText = 'Resetting...';
+      try {
+        const { data: ok, error: rpcErr } = await fintrackSupabase.rpc("reset_password_with_pin", {
+          p_username: u, p_pin: pin, p_new_password: p
+        });
+        if (rpcErr) {
+          console.error("Reset error:", rpcErr);
+          return showToast("Reset failed: " + rpcErr.message, "error");
+        }
+        if (!ok) return showToast("Wrong username / PIN, no PIN set for this user, or locked after 5 wrong tries", "error");
+        closeModal('forgotModal');
+        document.getElementById('loginUsername').value = u;
+        document.getElementById('loginPassword').value = '';
+        ['resetUsernameInput', 'resetPinInput', 'resetNewPassInput'].forEach(id => document.getElementById(id).value = '');
+        showToast("Password reset done! Please login", "success");
+      } catch (e) {
+        console.error(e);
+        showToast("Network error, try again", "error");
+      } finally {
+        btn.disabled = false; btn.innerText = 'Reset Password';
+      }
+    }
+
+    /* Set / change Recovery PIN (for logged-in users) */
+    function openRecoveryPinModal() {
+      document.getElementById('newRecoveryPinInput').value = '';
+      document.getElementById('recoveryPinModal').style.display = 'flex';
+    }
+    async function handleSetRecoveryPin() {
+      const pin = document.getElementById('newRecoveryPinInput').value.trim();
+      if (!/^\d{4}$/.test(pin)) return showToast("Recovery PIN must be exactly 4 digits", "error");
+      const { error } = await fintrackSupabase.rpc("set_recovery_pin", { p_pin: pin });
+      if (error) { console.error(error); return showToast("PIN not saved: " + error.message, "error"); }
+      closeModal('recoveryPinModal');
+      showToast("Recovery PIN saved", "success");
     }
 
     /* Auth Submit */
@@ -2301,6 +2481,7 @@
       const p = document.getElementById('loginPassword').value.trim();
       const pin = document.getElementById('userRecoveryPin').value.trim();
       if (!u || !p) return showToast("Fill all credentials", "error");
+      if (authMode === 'register' && !/^\d{4}$/.test(pin)) return showToast("Enter a 4-digit Recovery PIN (needed for password reset)", "error");
 
       try {
         if (authMode === 'register') {
