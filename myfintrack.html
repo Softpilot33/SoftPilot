@@ -952,7 +952,7 @@
                 <th style="width: 15%;">Income</th>
                 <th style="width: 15%;">Expense</th>
                 <th style="width: 16%;">Balance</th>
-                <th style="width: 5%;"></th>
+                <th style="width: 10%;"></th>
               </tr>
             </thead>
             <tbody id="sheetTableBody"></tbody>
@@ -1172,7 +1172,7 @@
 
       <div class="modal-actions">
         <button class="modal-btn modal-cancel-btn" onclick="closeModal('quickEntryModal')">Cancel</button>
-        <button class="modal-btn modal-save-btn" onclick="submitQuickEntry()">Save Entry</button>
+        <button class="modal-btn modal-save-btn" id="qeSaveBtn" onclick="submitQuickEntry()">Save Entry</button>
       </div>
     </div>
   </div>
@@ -1313,7 +1313,8 @@
       };
       const { error } = await fintrackSupabase.from("fintrack_data").upsert(row, { onConflict: "user_id" });
       if (error) {
-        if (showNotify) showToast("Save failed", "error");
+        console.error("Supabase save error:", error);
+        showToast("Cloud save failed: " + (error.message || "unknown error"), "error");
         return false;
       }
       if (showNotify) showToast("Cloud Synced Successfully!", "success");
@@ -1478,9 +1479,25 @@
 
     /* Quick Entry Modal Controller */
     let currentEntryTarget = 'cashbook';
+    let editingRowIndex = null;
+
+    function openEditCashRow(i) {
+      const row = sheets[currentSheetIndex].rows[i];
+      if (!row) return;
+      openQuickEntryModal('cashbook');
+      editingRowIndex = i;
+      document.getElementById('quickEntryModalTitle').innerText = 'Update Cashbook Row';
+      document.getElementById('qeSaveBtn').innerText = 'Update';
+      document.getElementById('qeDate').value = row.date || today;
+      document.getElementById('qeParticular').value = row.particular || '';
+      document.getElementById('qeIncome').value = row.income || '';
+      document.getElementById('qeExp').value = row.exp || '';
+    }
 
     function openQuickEntryModal(target = 'cashbook') {
       currentEntryTarget = target;
+      editingRowIndex = null;
+      document.getElementById('qeSaveBtn').innerText = 'Save Entry';
       document.getElementById('qeDate').value = today;
       document.getElementById('qeParticular').value = '';
 
@@ -1531,13 +1548,19 @@
         }
 
         if (!sheets[currentSheetIndex].rows) sheets[currentSheetIndex].rows = [];
-        sheets[currentSheetIndex].rows.push({
-          date: dateVal,
-          particular: particularVal,
-          income: incVal,
-          exp: expVal
-        });
+        const newRow = { date: dateVal, particular: particularVal, income: incVal, exp: expVal };
 
+        if (editingRowIndex !== null && sheets[currentSheetIndex].rows[editingRowIndex]) {
+          // UPDATE existing row (keeps any extra fields like mode)
+          Object.assign(sheets[currentSheetIndex].rows[editingRowIndex], newRow);
+          editingRowIndex = null;
+          saveAllData();
+          renderSheet();
+          closeModal('quickEntryModal');
+          return showToast("Entry updated successfully!", "success");
+        }
+
+        sheets[currentSheetIndex].rows.push(newRow);
         saveAllData();
         renderSheet();
 
@@ -1723,7 +1746,7 @@
           <td><input type="number" inputmode="numeric" class="num" value="${row.income === 0 ? '' : row.income}" placeholder="0" oninput="sheets[currentSheetIndex].rows[${i}].income=parseFloat(this.value)||0;saveAllData();calculateCashTotals();"></td>
           <td><input type="number" inputmode="numeric" class="num exp-num" value="${row.exp === 0 ? '' : row.exp}" placeholder="0" oninput="sheets[currentSheetIndex].rows[${i}].exp=parseFloat(this.value)||0;saveAllData();calculateCashTotals();"></td>
           <td class="num" id="bal-cell-${i}">0</td>
-          <td><button class="action-btn" onclick="sheets[currentSheetIndex].rows.splice(${i},1);saveAllData();renderSheet();">✕</button></td>
+          <td style="white-space:nowrap;"><button class="action-btn" title="Edit" onclick="openEditCashRow(${i})">✎</button> <button class="action-btn" onclick="sheets[currentSheetIndex].rows.splice(${i},1);saveAllData();renderSheet();">✕</button></td>
         `;
         tbody.appendChild(tr);
       });
